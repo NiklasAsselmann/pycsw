@@ -43,6 +43,7 @@ import pycsw.plugins.outputschemas
 from pycsw.core import config, log, metadata, util
 from pycsw.core.formats.fmt_json import xml2dict
 from pycsw.ogc.fes import fes2
+#from pycsw.SimScore import SimScore
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -55,6 +56,46 @@ class Csw3(object):
 
         self.parent = server_csw
         self.version = '3.0.0'
+
+    def addSimilarRecords(self, max_number, spatial_sim, temp_sim, datatype_sim, location_sim, geographic_sim, extent_sim):
+        metadatsimilarity = dict(self.parent.config.items('similarity'))
+        MAX_NUMBER_RECORDS = None
+        WEIGHT_SPATIAL_SIM = None
+        WEIGHT_TEMP_SIM = None
+        WEIGHT_DATATYPE_SIM = None
+        WEIGHT_LOCATION_SIM = None
+        WEIGHT_GEOGRAPHIC_SIM = None
+        WEIGHT_EXTENT_SIM = None
+        if max_number:
+            MAX_NUMBER_RECORDS = max_number
+        else:
+            MAX_NUMBER_RECORDS = metadatsimilarity.get('number_max_show_records_default')
+        if spatial_sim:
+            WEIGHT_SPATIAL_SIM = spatial_sim
+        else:
+            WEIGHT_SPATIAL_SIM = metadatsimilarity.get('weight_spatial_sim_default')
+        if temp_sim:
+            WEIGHT_TEMP_SIM = temp_sim
+        else:
+            WEIGHT_TEMP_SIM = metadatsimilarity.get('weight_temporal_sim_default')
+        if datatype_sim:
+            WEIGHT_DATATYPE_SIM = datatype_sim
+        else:
+            WEIGHT_DATATYPE_SIM = metadatsimilarity.get('weight_datatype_sim_default')
+        if location_sim:
+            WEIGHT_LOCATION_SIM = location_sim
+        else: 
+            WEIGHT_LOCATION_SIM = metadatsimilarity.get('weight_location_sim_default')
+        if geographic_sim:
+            WEIGHT_GEOGRAPHIC_SIM = geographic_sim
+        else:
+            WEIGHT_GEOGRAPHIC_SIM = metadatsimilarity.get('weight_geographic_sim_default')
+        if extent_sim:
+            WEIGHT_EXTENT_SIM = extent_sim
+        else: 
+            WEIGHT_EXTENT_SIM = metadatsimilarity.get('weight_extent_sim_default')
+        #SimScore.getSimilarRecords(?, ?, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
+        #WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
 
     def getcapabilities(self):
         ''' Handle GetCapabilities request '''
@@ -1243,6 +1284,14 @@ class Csw3(object):
         results = self.parent.repository.query_ids([self.parent.kvp['id']])
         LOGGER.debug(self.parent.repository.query_ids([self.parent.kvp['id']]))
 
+        LOGGER.debug(self.parent.repository.query_ids(''))
+        LOGGER.debug(self.parent.repository.queryables['_all']) # {'dc:title': {'dbcol': 'title'}, 'dct:alternative': {'dbcol': 'title_alternate'}, 'dc:creator': {'dbcol': 'creator'}, 'dc:subject': {'dbcol': 'keywords'}, 'dct:abstract': {'dbcol': 'abstract'}, 'dc:publisher': {'dbcol': 'publisher'}, 'dc:contributor': {'dbcol': 'contributor'}, 'dct:modified': {'dbcol': 'date_modified'}, 'dc:date': {'dbcol': 'date'}, 'dc:type': {'dbcol': 'type'}, 'dc:format': {'dbcol': 'format'}, 'dc:identifier123': {'dbcol': 'identifier'}, 'dc:source': {'dbcol': 'source'}, 'dc:language': {'dbcol': 'language'}, 'dc:relation': {'
+
+        LOGGER.debug(results) # [<pycsw.core.repository.dataset object at 0x111ee13c8>]
+        for x in results:
+            LOGGER.debug(type(x)) # <class 'pycsw.core.repository.dataset'>
+            LOGGER.debug(x) # <pycsw.core.repository.dataset object at 0x106f15400>
+
         if raw:  # GetRepositoryItem request
             LOGGER.debug('GetRepositoryItem request.')
             if len(results) > 0:
@@ -1324,6 +1373,7 @@ class Csw3(object):
         LOGGER.debug(node)
                 
 
+        LOGGER.debug(node) # <Element {http://www.opengis.net/cat/csw/3.0}SummaryRecord at 0x108cd64c8>
         return node    
 
     def getrepositoryitem(self):
