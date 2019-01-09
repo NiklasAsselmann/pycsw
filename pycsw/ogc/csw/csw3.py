@@ -68,9 +68,13 @@ class Csw3(object):
         LOGGER.info('Validating ows20:AcceptFormats')
         LOGGER.debug(self.parent.context.model['operations']['GetCapabilities']['parameters']['acceptFormats']['values'])
         if 'acceptformats' in self.parent.kvp:
+            LOGGER.debug("Selbst")
+            LOGGER.debug("accepted formats in self.parent.kvp")
             bfound = False
             for fmt in self.parent.kvp['acceptformats'].split(','):
                 if fmt in self.parent.context.model['operations']['GetCapabilities']['parameters']['acceptFormats']['values']:
+                    LOGGER.debug("Selbst")
+                    LOGGER.debug(fmt)
                     self.parent.mimetype = fmt
                     bfound = True
                     break
@@ -1071,12 +1075,18 @@ class Csw3(object):
                 for ofmt in self.parent.environ['HTTP_ACCEPT'].split(','):
                     if ofmt in self.parent.context.model['operations']['GetRecords']['parameters']['outputFormat']['values']:
                         self.parent.kvp['outputformat'] = ofmt
+                        LOGGER.debug("Selbst")
+                        LOGGER.debug(self.parent.kvp['outputformat'])
+                        LOGGER.debug(ofmt)
                         break
+
 
         if ('outputformat' in self.parent.kvp and
             self.parent.kvp['outputformat'] not in
             self.parent.context.model['operations']['GetRecordById']['parameters']
             ['outputFormat']['values']):
+            LOGGER.debug("Selbst")
+            LOGGER.debug("1")
             return self.exceptionreport('InvalidParameterValue',
             'outputformat', 'Invalid outputformat parameter %s' %
             self.parent.kvp['outputformat'])
@@ -1084,11 +1094,15 @@ class Csw3(object):
         if ('outputschema' in self.parent.kvp and self.parent.kvp['outputschema'] not in
             self.parent.context.model['operations']['GetRecordById']['parameters']
             ['outputSchema']['values']):
+            LOGGER.debug("Selbst")
+            LOGGER.debug("2")            
             return self.exceptionreport('InvalidParameterValue',
             'outputschema', 'Invalid outputschema parameter %s' %
             self.parent.kvp['outputschema'])
 
         if 'outputformat' in self.parent.kvp:
+            LOGGER.debug("Selbst")
+            LOGGER.debug("2")
             self.parent.contenttype = self.parent.kvp['outputformat']
             if self.parent.kvp['outputformat'] == 'application/atom+xml':
                 self.parent.kvp['outputschema'] = self.parent.context.namespaces['atom']
@@ -1154,7 +1168,8 @@ class Csw3(object):
         if len(results) == 0:
             return self.exceptionreport('NotFound', 'id',
             'No repository item found for \'%s\'' % self.parent.kvp['id'])
-
+        LOGGER.debug("Selbst")
+        LOGGER.debug(node)
         return node
 
 
@@ -1226,12 +1241,18 @@ class Csw3(object):
         # query repository
         LOGGER.info('Querying repository with ids: %s', self.parent.kvp['id'])
         results = self.parent.repository.query_ids([self.parent.kvp['id']])
+        LOGGER.debug(self.parent.repository.query_ids([self.parent.kvp['id']]))
 
         if raw:  # GetRepositoryItem request
             LOGGER.debug('GetRepositoryItem request.')
             if len(results) > 0:
-                return etree.fromstring(util.getqattr(results[0],
+                
+                LOGGER.debug("selbst")
+                output = etree.fromstring(util.getqattr(results[0],
                 self.parent.context.md_core_model['mappings']['pycsw:XML']), self.parent.context.parser)
+    
+
+                return output
 
         for result in results:
             if (util.getqattr(result,
@@ -1239,8 +1260,19 @@ class Csw3(object):
             and self.parent.kvp['outputschema'] ==
             'http://www.opengis.net/cat/csw/3.0'):
                 # serialize record inline
+                
+                LOGGER.debug("Selbst")
+                LOGGER.debug(self.parent.context.md_core_model['mappings']['pycsw:Typename'])
+                LOGGER.debug(util.getqattr(result, self.parent.context.md_core_model['mappings']['pycsw:XML']))
+                #LOGGER.debug(simScoreOutput)
+                #LOGGER.debug(output)
+                #LOGGER.debug(util.getqattr(result, self.parent.repository.queryables['_all']))
+                LOGGER.debug(type(result))
+                LOGGER.debug(type(results))
+
                 node = self._write_record(
                 result, self.parent.repository.queryables['_all'])
+
             elif (self.parent.kvp['outputschema'] ==
                 'http://www.opengis.net/cat/csw/3.0'):
                 # serialize into csw:Record model
@@ -1260,6 +1292,7 @@ class Csw3(object):
                     )
 
                 node = self._write_record( result, self.parent.repository.queryables['_all'])
+                LOGGER.debug(util.getqattr(node, self.parent.context.md_core_model['mappings']['pycsw:XML']))
             elif self.parent.kvp['outputschema'] in self.parent.outputschemas:  # use outputschema serializer
                 node = self.parent.outputschemas[self.parent.kvp['outputschema']].write_record(result, self.parent.kvp['elementsetname'], self.parent.context, self.parent.config.get('server', 'url'))
             else:  # it's a profile output
@@ -1273,6 +1306,23 @@ class Csw3(object):
         if len(results) == 0:
             return self.exceptionreport('NotFound', 'id',
             'No repository item found for \'%s\'' % self.parent.kvp['id'])
+       
+        LOGGER.debug("Selbst")
+        LOGGER.debug(util.getqattr(results[0], self.parent.context.md_core_model['mappings']['pycsw:XML']))
+        LOGGER.debug(type(util.getqattr(results[0], self.parent.context.md_core_model['mappings']['pycsw:XML'])))
+        LOGGER.debug(etree.tostring(node))
+
+ 
+        simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
+        simRecords = etree.SubElement(node, "similary_records")
+        for elem in simScoreOutput:
+            record = etree.SubElement(simRecords, "record")
+            identifier = etree.SubElement(record, "identifier")
+            identifier.text = elem[0]
+            simScore = etree.SubElement(record, "similarity_score")
+            simScore.text = str(elem[1])
+        LOGGER.debug(node)
+                
 
         return node    
 
@@ -1747,6 +1797,8 @@ class Csw3(object):
 
             #Vector Representation
             vectorRepresentation = util.getqattr(record, self.parent.context.md_core_model['mappings']['pycsw:VectorRepresentation'])
+            LOGGER.debug("Selbst")
+            LOGGER.debug(vectorRepresentation)
             if vectorRepresentation:
                 etree.SubElement(record, util.nspath_eval('dc:VectorRepresentation', self.parent.context.namespaces)).text = vectorRepresentation
 
@@ -1904,7 +1956,7 @@ class Csw3(object):
 
             tmp = doc.find('.').attrib.get('outputFormat')
             request['outputformat'] = tmp if tmp is not None \
-            else 'application/xml'
+            else 'application/json'
 
             tmp = doc.find('.').attrib.get('startPosition')
             request['startposition'] = tmp if tmp is not None else 1
@@ -2004,6 +2056,8 @@ class Csw3(object):
             else self.parent.context.namespaces['csw30']
 
             tmp = doc.find('.').attrib.get('outputFormat')
+            LOGGER.debug("Selbst")
+            LOGGER.debug(tmp)
             if tmp is not None:
                 request['outputformat'] = tmp
 
