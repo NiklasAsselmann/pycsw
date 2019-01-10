@@ -1,5 +1,6 @@
 # build artifacts
 *.pyc
+*.log
 *.egg-info
 build
 dist
@@ -13,6 +14,7 @@ tests/results
 .coverage
 .tox
 .pytest_cache
+
 
 # test configurations
 /default.cfg
