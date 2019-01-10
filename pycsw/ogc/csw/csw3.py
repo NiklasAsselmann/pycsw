@@ -1174,7 +1174,7 @@ class Csw3(object):
         LOGGER.debug(node)
         return node
 
-
+    
 
     def getsimilarrecords(self, raw=False):
         ''' Handle GetSimilarRecords request '''
@@ -1188,10 +1188,6 @@ class Csw3(object):
             'Invalid id parameter')
         if 'outputschema' not in self.parent.kvp:
             self.parent.kvp['outputschema'] = self.parent.context.namespaces['csw30']
-
-        LOGGER.debug("getSimilarRecords")
-        
-
 
         if 'HTTP_ACCEPT' in self.parent.environ:
             LOGGER.debug('Detected HTTP Accept header: %s', self.parent.environ['HTTP_ACCEPT'])
@@ -1245,51 +1241,7 @@ class Csw3(object):
                 self.parent.kvp['elementsetname'])
 
         # query repository
-        LOGGER.info('Querying repository with ids: %s', self.parent.kvp['id'])
         results = self.parent.repository.query_ids([self.parent.kvp['id']])
-        LOGGER.debug(self.parent.repository.query_ids([self.parent.kvp['id']]))
-
-        LOGGER.debug(self.parent.repository.query_ids(''))
-        LOGGER.debug(self.parent.repository.queryables['_all']) # {'dc:title': {'dbcol': 'title'}, 'dct:alternative': {'dbcol': 'title_alternate'}, 'dc:creator': {'dbcol': 'creator'}, 'dc:subject': {'dbcol': 'keywords'}, 'dct:abstract': {'dbcol': 'abstract'}, 'dc:publisher': {'dbcol': 'publisher'}, 'dc:contributor': {'dbcol': 'contributor'}, 'dct:modified': {'dbcol': 'date_modified'}, 'dc:date': {'dbcol': 'date'}, 'dc:type': {'dbcol': 'type'}, 'dc:format': {'dbcol': 'format'}, 'dc:identifier123': {'dbcol': 'identifier'}, 'dc:source': {'dbcol': 'source'}, 'dc:language': {'dbcol': 'language'}, 'dc:relation': {'
-
-        LOGGER.debug(results) # [<pycsw.core.repository.dataset object at 0x111ee13c8>]
-        for x in results:
-            for x in self.parent.repository.query_ids(''):
-                
-                    LOGGER.debug("oudfgxs9u")
-                    LOGGER.debug(type(x)) # <class 'pycsw.core.repository.dataset'>
-                    LOGGER.debug(x) # <pycsw.core.repository.dataset object at 0x106f15400>
-                    LOGGER.debug(etree.tostring(x))
-        except:
-            pass
-        try:
-            for x in self.parent.repository.query_ids(None):
-                
-                    LOGGER.debug("oudfgxs9u2")
-                    LOGGER.debug(type(x)) # <class 'pycsw.core.repository.dataset'>
-                    LOGGER.debug(x) # <pycsw.core.repository.dataset object at 0x106f15400>
-                    LOGGER.debug(etree.tostring(x))
-        except:
-            pass
-        try:
-            for x in self.parent.repository.queryables['_all']:        
-                    LOGGER.debug("oudfgxs9u3")
-            LOGGER.debug(type(x)) # <class 'pycsw.core.repository.dataset'>
-            LOGGER.debug(x) # <pycsw.core.repository.dataset object at 0x106f15400>
-                    LOGGER.debug("gcsig" + str(etree.tostring(x)))
-        except:
-            pass
-
-        if raw:  # GetRepositoryItem request
-            LOGGER.debug('GetRepositoryItem request.')
-            if len(results) > 0:
-                
-                LOGGER.debug("selbst")
-                output = etree.fromstring(util.getqattr(results[0],
-                self.parent.context.md_core_model['mappings']['pycsw:XML']), self.parent.context.parser)
-    
-
-                return output
 
         for result in results:
             if (util.getqattr(result,
@@ -1300,7 +1252,7 @@ class Csw3(object):
                 
                 LOGGER.debug("Selbst")
                 LOGGER.debug(self.parent.context.md_core_model['mappings']['pycsw:Typename'])
-                LOGGER.debug(util.getqattr(result, self.parent.context.md_core_model['mappings']['pycsw:XML']))
+                LOGGER.debug("uoou" + str(util.getqattr(result, self.parent.context.md_core_model['mappings']['pycsw:XML'])))
                 #LOGGER.debug(simScoreOutput)
                 #LOGGER.debug(output)
                 #LOGGER.debug(util.getqattr(result, self.parent.repository.queryables['_all']))
@@ -1344,15 +1296,13 @@ class Csw3(object):
             return self.exceptionreport('NotFound', 'id',
             'No repository item found for \'%s\'' % self.parent.kvp['id'])
        
-        LOGGER.debug("Selbst")
-        LOGGER.debug(util.getqattr(results[0], self.parent.context.md_core_model['mappings']['pycsw:XML']))
-        LOGGER.debug(type(util.getqattr(results[0], self.parent.context.md_core_model['mappings']['pycsw:XML'])))
-        LOGGER.debug(etree.tostring(node))
 
         identifier = self.parent.kvp['id']
         LOGGER.debug(identifier)
+        metadatsimilarity = dict(self.parent.config.items('similarity')) # access similarity part of config file
+        weight_min_value = 0.0
+        weight_max_value = float(metadatsimilarity.get('max_value_for_weight'))
 
-        metadatsimilarity = dict(self.parent.config.items('similarity'))
         MAX_NUMBER_RECORDS = None
         WEIGHT_SPATIAL_SIM = None
         WEIGHT_TEMP_SIM = None
@@ -1360,9 +1310,16 @@ class Csw3(object):
         WEIGHT_LOCATION_SIM = None
         WEIGHT_GEOGRAPHIC_SIM = None
         WEIGHT_EXTENT_SIM = None
+        '''for each parameter of the similarity function:
+            if parameter for the similary function is not changed in the request, take the default value from the config file
+            if parameter is changed but in a wrong format, raise an error that is visible for the user
+            if parameter is changed an in the right format, take the new parameter for the similarity calculation'''
         if 'max_number' in self.parent.kvp:
             try:
                 MAX_NUMBER_RECORDS = int(self.parent.kvp['max_number'])
+                if MAX_NUMBER_RECORDS not in range(1, 21):
+                    return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value must be in the range [1,20]")    
             except:
                 return self.exceptionreport('InvalidParameterValue',
                  'elementsetname', "Parameter value of 'max_number' must be integer")
@@ -1371,6 +1328,9 @@ class Csw3(object):
         if 'spatial_weight' in self.parent.kvp:
             try:
                 WEIGHT_SPATIAL_SIM = float(self.parent.kvp['spatial_weight'])
+                if WEIGHT_SPATIAL_SIM < weight_min_value or WEIGHT_SPATIAL_SIM > weight_max_value:
+                    return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
                  'elementsetname', "Parameter value of 'spatial_weight' must be integer or float")
@@ -1379,6 +1339,9 @@ class Csw3(object):
         if 'temp_weight' in self.parent.kvp:
             try:
                 EIGHT_TEMP_SIM = float(self.parent.kvp['temp_weight'])
+                if EIGHT_TEMP_SIM < weight_min_value or EIGHT_TEMP_SIM > weight_max_value:
+                    return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
                  'elementsetname', "Parameter value of 'temp_weight' must be integer or float")
@@ -1387,6 +1350,9 @@ class Csw3(object):
         if 'datatype_weight' in self.parent.kvp:
             try:
                 WEIGHT_DATATYPE_SIM = float(self.parent.kvp['datatype_weight'])
+                if WEIGHT_DATATYPE_SIM < weight_min_value or WEIGHT_DATATYPE_SIM > weight_max_value:
+                    return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
                  'elementsetname', "Parameter value of 'datatype_weight' must be integer or float")
@@ -1395,6 +1361,9 @@ class Csw3(object):
         if 'location_weight' in self.parent.kvp:
             try:
                 WEIGHT_LOCATION_SIM = float(self.parent.kvp['location_weight'])
+                if WEIGHT_LOCATION_SIM < weight_min_value or WEIGHT_LOCATION_SIM > weight_max_value:
+                    return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
                  'elementsetname', "Parameter value of 'location_weight' must be integer or float")
@@ -1403,6 +1372,9 @@ class Csw3(object):
         if 'geographic_weight' in self.parent.kvp:
             try:
                 WEIGHT_GEOGRAPHIC_SIM = float(self.parent.kvp['geographic_weight'])
+                if WEIGHT_GEOGRAPHIC_SIM < weight_min_value or WEIGHT_GEOGRAPHIC_SIM > weight_max_value:
+                    return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
                  'elementsetname', "Parameter value of 'geographic_weight' must be integer or float")
@@ -1411,6 +1383,9 @@ class Csw3(object):
         if 'extent_weight' in self.parent.kvp:
             try:
                 WEIGHT_EXTENT_SIM = float(self.parent.kvp['extent_weight'])
+                if WEIGHT_EXTENT_SIM < weight_min_value or WEIGHT_EXTENT_SIM > weight_max_value:
+                    return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
                  'elementsetname', "Parameter value of 'extent_weight' must be integer or float")
@@ -1426,15 +1401,13 @@ class Csw3(object):
         for record in all_records: 
             record_dict = {}
             def computeBbox(wkt_geometry):
+                '''get bouding box of given wkt_geometry (poylgon)'''
                 wkt_geometry = str(wkt_geometry)
                 wkt_geometry = wkt_geometry[9:len(wkt_geometry)-2]
-                LOGGER.debug(wkt_geometry)
                 coordinates = wkt_geometry.split(", ")
                 points = []
                 for x in coordinates:
                     points.extend(x.split(" "))
-                LOGGER.debug(coordinates)
-                LOGGER.debug(points)
                 if type(points) == list:
                     if len(points) > 5:
                         return [points[0], points[1], points[4], points[5]]
@@ -1446,13 +1419,13 @@ class Csw3(object):
             #record_dict['raster'] = bool
             # record_dict['vecotr'] = 
             records_array.append(record_dict)
-            
         LOGGER.debug(records_array)
+
         # get the dataset with the identifier required
         for record in records_array:
             if record['id'] == identifier:
                 compared_record = record
-
+        LOGGER.debug(compared_record)
         if 'compared_record' in locals():
             simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
                 WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
@@ -1470,7 +1443,6 @@ class Csw3(object):
             identifier.text = elem[0]
             simScore = etree.SubElement(record, "similarity_score")
             simScore.text = str(elem[1])
-        LOGGER.debug(node)
             
 
         LOGGER.debug(node) # <Element {http://www.opengis.net/cat/csw/3.0}SummaryRecord at 0x108cd64c8>
