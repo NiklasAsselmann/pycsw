@@ -43,7 +43,7 @@ import pycsw.plugins.outputschemas
 from pycsw.core import config, log, metadata, util
 from pycsw.core.formats.fmt_json import xml2dict
 from pycsw.ogc.fes import fes2
-#from pycsw.SimScore import SimScore
+from pycsw.similarity import simscore
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -57,45 +57,6 @@ class Csw3(object):
         self.parent = server_csw
         self.version = '3.0.0'
 
-    def addSimilarRecords(self, max_number, spatial_sim, temp_sim, datatype_sim, location_sim, geographic_sim, extent_sim):
-        metadatsimilarity = dict(self.parent.config.items('similarity'))
-        MAX_NUMBER_RECORDS = None
-        WEIGHT_SPATIAL_SIM = None
-        WEIGHT_TEMP_SIM = None
-        WEIGHT_DATATYPE_SIM = None
-        WEIGHT_LOCATION_SIM = None
-        WEIGHT_GEOGRAPHIC_SIM = None
-        WEIGHT_EXTENT_SIM = None
-        if max_number:
-            MAX_NUMBER_RECORDS = max_number
-        else:
-            MAX_NUMBER_RECORDS = metadatsimilarity.get('number_max_show_records_default')
-        if spatial_sim:
-            WEIGHT_SPATIAL_SIM = spatial_sim
-        else:
-            WEIGHT_SPATIAL_SIM = metadatsimilarity.get('weight_spatial_sim_default')
-        if temp_sim:
-            WEIGHT_TEMP_SIM = temp_sim
-        else:
-            WEIGHT_TEMP_SIM = metadatsimilarity.get('weight_temporal_sim_default')
-        if datatype_sim:
-            WEIGHT_DATATYPE_SIM = datatype_sim
-        else:
-            WEIGHT_DATATYPE_SIM = metadatsimilarity.get('weight_datatype_sim_default')
-        if location_sim:
-            WEIGHT_LOCATION_SIM = location_sim
-        else: 
-            WEIGHT_LOCATION_SIM = metadatsimilarity.get('weight_location_sim_default')
-        if geographic_sim:
-            WEIGHT_GEOGRAPHIC_SIM = geographic_sim
-        else:
-            WEIGHT_GEOGRAPHIC_SIM = metadatsimilarity.get('weight_geographic_sim_default')
-        if extent_sim:
-            WEIGHT_EXTENT_SIM = extent_sim
-        else: 
-            WEIGHT_EXTENT_SIM = metadatsimilarity.get('weight_extent_sim_default')
-        #SimScore.getSimilarRecords(?, ?, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
-        #WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
 
     def getcapabilities(self):
         ''' Handle GetCapabilities request '''
@@ -1214,10 +1175,10 @@ class Csw3(object):
         return node
 
 
+
     def getsimilarrecords(self, raw=False):
         ''' Handle GetSimilarRecords request '''
 
-        LOGGER.debug("getSimilarRecords")
         
         if 'id' not in self.parent.kvp:
             return self.exceptionreport('MissingParameterValue', 'id',
@@ -1227,6 +1188,10 @@ class Csw3(object):
             'Invalid id parameter')
         if 'outputschema' not in self.parent.kvp:
             self.parent.kvp['outputschema'] = self.parent.context.namespaces['csw30']
+
+        LOGGER.debug("getSimilarRecords")
+        
+
 
         if 'HTTP_ACCEPT' in self.parent.environ:
             LOGGER.debug('Detected HTTP Accept header: %s', self.parent.environ['HTTP_ACCEPT'])
@@ -1289,8 +1254,31 @@ class Csw3(object):
 
         LOGGER.debug(results) # [<pycsw.core.repository.dataset object at 0x111ee13c8>]
         for x in results:
+            for x in self.parent.repository.query_ids(''):
+                
+                    LOGGER.debug("oudfgxs9u")
+                    LOGGER.debug(type(x)) # <class 'pycsw.core.repository.dataset'>
+                    LOGGER.debug(x) # <pycsw.core.repository.dataset object at 0x106f15400>
+                    LOGGER.debug(etree.tostring(x))
+        except:
+            pass
+        try:
+            for x in self.parent.repository.query_ids(None):
+                
+                    LOGGER.debug("oudfgxs9u2")
+                    LOGGER.debug(type(x)) # <class 'pycsw.core.repository.dataset'>
+                    LOGGER.debug(x) # <pycsw.core.repository.dataset object at 0x106f15400>
+                    LOGGER.debug(etree.tostring(x))
+        except:
+            pass
+        try:
+            for x in self.parent.repository.queryables['_all']:        
+                    LOGGER.debug("oudfgxs9u3")
             LOGGER.debug(type(x)) # <class 'pycsw.core.repository.dataset'>
             LOGGER.debug(x) # <pycsw.core.repository.dataset object at 0x106f15400>
+                    LOGGER.debug("gcsig" + str(etree.tostring(x)))
+        except:
+            pass
 
         if raw:  # GetRepositoryItem request
             LOGGER.debug('GetRepositoryItem request.')
@@ -1361,17 +1349,129 @@ class Csw3(object):
         LOGGER.debug(type(util.getqattr(results[0], self.parent.context.md_core_model['mappings']['pycsw:XML'])))
         LOGGER.debug(etree.tostring(node))
 
- 
+        identifier = self.parent.kvp['id']
+        LOGGER.debug(identifier)
+
+        metadatsimilarity = dict(self.parent.config.items('similarity'))
+        MAX_NUMBER_RECORDS = None
+        WEIGHT_SPATIAL_SIM = None
+        WEIGHT_TEMP_SIM = None
+        WEIGHT_DATATYPE_SIM = None
+        WEIGHT_LOCATION_SIM = None
+        WEIGHT_GEOGRAPHIC_SIM = None
+        WEIGHT_EXTENT_SIM = None
+        if 'max_number' in self.parent.kvp:
+            try:
+                MAX_NUMBER_RECORDS = int(self.parent.kvp['max_number'])
+            except:
+                return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value of 'max_number' must be integer")
+        else:
+            MAX_NUMBER_RECORDS = int(metadatsimilarity.get('number_max_show_records_default'))
+        if 'spatial_weight' in self.parent.kvp:
+            try:
+                WEIGHT_SPATIAL_SIM = float(self.parent.kvp['spatial_weight'])
+            except:
+                return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value of 'spatial_weight' must be integer or float")
+        else:
+            WEIGHT_SPATIAL_SIM = int(metadatsimilarity.get('weight_spatial_sim_default'))
+        if 'temp_weight' in self.parent.kvp:
+            try:
+                EIGHT_TEMP_SIM = float(self.parent.kvp['temp_weight'])
+            except:
+                return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value of 'temp_weight' must be integer or float")
+        else:
+            WEIGHT_TEMP_SIM = int(metadatsimilarity.get('weight_temporal_sim_default'))
+        if 'datatype_weight' in self.parent.kvp:
+            try:
+                WEIGHT_DATATYPE_SIM = float(self.parent.kvp['datatype_weight'])
+            except:
+                return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value of 'datatype_weight' must be integer or float")
+        else:
+            WEIGHT_DATATYPE_SIM = int(metadatsimilarity.get('weight_datatype_sim_default'))
+        if 'location_weight' in self.parent.kvp:
+            try:
+                WEIGHT_LOCATION_SIM = float(self.parent.kvp['location_weight'])
+            except:
+                return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value of 'location_weight' must be integer or float")
+        else: 
+            WEIGHT_LOCATION_SIM = int(metadatsimilarity.get('weight_location_sim_default'))
+        if 'geographic_weight' in self.parent.kvp:
+            try:
+                WEIGHT_GEOGRAPHIC_SIM = float(self.parent.kvp['geographic_weight'])
+            except:
+                return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value of 'geographic_weight' must be integer or float")
+        else:
+            WEIGHT_GEOGRAPHIC_SIM = int(metadatsimilarity.get('weight_geographic_sim_default'))
+        if 'extent_weight' in self.parent.kvp:
+            try:
+                WEIGHT_EXTENT_SIM = float(self.parent.kvp['extent_weight'])
+            except:
+                return self.exceptionreport('InvalidParameterValue',
+                 'elementsetname', "Parameter value of 'extent_weight' must be integer or float")
+        else: 
+            WEIGHT_EXTENT_SIM = int(metadatsimilarity.get('weight_extent_sim_default'))
+        LOGGER.debug([MAX_NUMBER_RECORDS, WEIGHT_SPATIAL_SIM, WEIGHT_TEMP_SIM, WEIGHT_DATATYPE_SIM, 
+        WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_EXTENT_SIM])
+
+        # get all records
+        all_records = self.parent.repository.query(constraint="")[1]
+
+        records_array = []
+        for record in all_records: 
+            record_dict = {}
+            def computeBbox(wkt_geometry):
+                wkt_geometry = str(wkt_geometry)
+                wkt_geometry = wkt_geometry[9:len(wkt_geometry)-2]
+                LOGGER.debug(wkt_geometry)
+                coordinates = wkt_geometry.split(", ")
+                points = []
+                for x in coordinates:
+                    points.extend(x.split(" "))
+                LOGGER.debug(coordinates)
+                LOGGER.debug(points)
+                if type(points) == list:
+                    if len(points) > 5:
+                        return [points[0], points[1], points[4], points[5]]
+                return None
+            record_dict['id'] = record.identifier
+            record_dict['wkt_geometry'] = computeBbox(record.wkt_geometry)
+            record_dict['time'] = [record.time_begin, record.time_end]
+            record_dict['vector'] = record.vector_rep
+            #record_dict['raster'] = bool
+            # record_dict['vecotr'] = 
+            records_array.append(record_dict)
+            
+        LOGGER.debug(records_array)
+        # get the dataset with the identifier required
+        for record in records_array:
+            if record['id'] == identifier:
+                compared_record = record
+
+        if 'compared_record' in locals():
+            simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
+                WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
+            LOGGER.debug(simscores)
+        else:
+            return self.exceptionreport('RelatedDatasetNotFound', 'id',
+                'The related dataset could not be found')
+        
+        # simscores
         simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
         simRecords = etree.SubElement(node, "similary_records")
         for elem in simScoreOutput:
-            record = etree.SubElement(simRecords, "record")
+            record = etree.SubElement(simRecords, "similarRecords")
             identifier = etree.SubElement(record, "identifier")
             identifier.text = elem[0]
             simScore = etree.SubElement(record, "similarity_score")
             simScore.text = str(elem[1])
         LOGGER.debug(node)
-                
+            
 
         LOGGER.debug(node) # <Element {http://www.opengis.net/cat/csw/3.0}SummaryRecord at 0x108cd64c8>
         return node    

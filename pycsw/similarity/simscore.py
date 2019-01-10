@@ -27,7 +27,7 @@ Help functions:
 '''
 '''Validitiy Check
 Checks whether entries are valid
-input: 
+input:
     entries:    list of dicts, each dict containing an entry (see bottom for more info)
     cmp:        single entry as dict
     n:          number of similar records to be shown
@@ -231,9 +231,8 @@ def getGeoExtSim(entryA, entryB):
     diagonalB=float(getDiagonal(entryB))
     minV = min(diagonalA, diagonalB)
     maxV = max(diagonalA, diagonalB)
-    if (maxV == 0){
+    if maxV == 0:
         return 1
-    }
     sim = float(minV/maxV)
     return sim
 
