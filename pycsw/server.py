@@ -697,10 +697,8 @@ class Csw(object):
             appinfo = '<!-- pycsw %s -->\n' % self.context.version
 
         else:  # it's json
-            if 'outputformat' in self.kvp:
-                self.contenttype = self.kvp['outputformat']
-            else:
-                self.contenttype = self.mimetype
+
+            self.contenttype = "application/json"
 
             from pycsw.core.formats import fmt_json
             response = fmt_json.xml2json(response,
