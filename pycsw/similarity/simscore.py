@@ -3,6 +3,8 @@ import heapq
 from datetime import datetime
 import dateutil.parser
 
+
+
 '''
 @author: Carolin Wortmann
 
@@ -63,7 +65,7 @@ input:  value in degree
 output: input value converted to radians
 '''
 def ConvertToRadian(input):
-    return float(input) * math.pi/ float(180)
+    return input * math.pi/ 180
 
 
 #Calculates diagonal of Bounding Box by use of Haversine Formula
@@ -227,17 +229,14 @@ output:
 
 '''
 def getGeoExtSim(entryA, entryB):
-    try:
-        diagonalA=float(getDiagonal(entryA))
-        diagonalB=float(getDiagonal(entryB))
-        minV = min(diagonalA, diagonalB)
-        maxV = max(diagonalA, diagonalB)
-        if maxV == 0:
-            return 1
-        sim = float(minV/maxV)
-        return sim
-    except:
-        return 0
+    diagonalA=float(getDiagonal(entryA))
+    diagonalB=float(getDiagonal(entryB))
+    minV = min(diagonalA, diagonalB)
+    maxV = max(diagonalA, diagonalB)
+    if maxV == 0:
+        return 1
+    sim = float(minV/maxV)
+    return sim
 
 
 
@@ -292,10 +291,7 @@ output:
     similarityscore (in [0,1])
 '''
 def getCenterGeoSim(entryA, entryB):
-    if type(entryA) == list and  len(entryA) > 0 and type(entryB) == list and len(entryB) > 0:
-        diagonal = float(getDiagonal([[],[],[entryA[1], entryB[1]]]))
-    else:
-        return 0
+    diagonal = float(getDiagonal([[],[],[entryA[1], entryB[1]]]))
     circumf = 20038
     sim = diagonal/circumf
     return sim
@@ -338,20 +334,14 @@ output:
 
 # Calculate intersection area of both bounding boxes
 def getInterGeoSim(entryA,entryB):
-    if entryA["wkt_geometry"] is not None and entryB["wkt_geometry"] is not None:
-        if not (type(entryA["wkt_geometry"]) == list and type(entryB["wkt_geometry"]) == list):
-            minLatA=entryA["wkt_geometry"][0]
-            maxLatA=entryA["wkt_geometry"][1]
-            minLonA=entryA["wkt_geometry"][2]
-            maxLonA=entryA["wkt_geometry"][3]
-            minLatB=entryB["wkt_geometry"][0]
-            maxLatB=entryB["wkt_geometry"][1]
-            minLonB=entryB["wkt_geometry"][2]
-            maxLonB=entryB["wkt_geometry"][3]
-        else:
-            return 0
-    else:
-        return 0
+    minLatA=entryA["wkt_geometry"][0]
+    maxLatA=entryA["wkt_geometry"][1]
+    minLonA=entryA["wkt_geometry"][2]
+    maxLonA=entryA["wkt_geometry"][3]
+    minLatB=entryB["wkt_geometry"][0]
+    maxLatB=entryB["wkt_geometry"][1]
+    minLonB=entryB["wkt_geometry"][2]
+    maxLonB=entryB["wkt_geometry"][3]
     
     #disjunct?
     if minLonA > maxLonB or maxLonA < minLonB or maxLatA < minLatB or minLatA > maxLonB:
@@ -510,8 +500,6 @@ def getGeoDatSim(entryA,entryB):
             return 0
     if entryB["raster"]:
         return 0
-    if not (type(entryA["vector"]) == list and type(entryA["vector"]) == list):
-        return 0
     if len(entryA["vector"])>=3:
         if len(entryB["vector"])>=3:
             return 1
@@ -583,7 +571,6 @@ def getIndSim(entryA, entryB, g, t, c):
 
 
 def getSimScoreTotal(entryA, entryB, g, t, e, d, l):
-
     dSim = getIndSim(entryA, entryB, g, t, 2)
     lSim = getIndSim(entryA, entryB, g, t, 1)
     eSim = getIndSim(entryA, entryB, g, t, 0)
@@ -616,8 +603,8 @@ getSimilarityScore: Berechnet den SimilarityScore
 
 def getSimilarRecords(entries, cmp, n, e, d, l, g, t):
     
-    #if checkValidity(entries, cmp, n, e, d, l, g, t) is False:
-     #   return False
+    if checkValidity(entries, cmp, n, e, d, l, g, t) is False:
+        return False
 
     if n>len(entries):
         n=len(entries)
@@ -638,6 +625,7 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t):
         else:
             heapq.heappush(records, min)
         i=i+1
+    
     output=sorted(records, key= lambda x: x[1])
 
     return output
