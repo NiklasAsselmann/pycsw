@@ -114,11 +114,13 @@ def gDiag(lat1,lat2,lon1,lon2):
 '''Calculate duration
 Calculates the length of temporal interval 
 input:
-    entry : repository record
+    entry : time information from entry
 output:
     timedelta
 '''
 def getInterv(entry):
+    if entry is None or entry[0] is None or entry[1] is None:
+        return 0
     t1 = entry[0]
     t2 = entry[1]
     frmt = "%Y-%m-%dT%H:%M:%S%Z" 
@@ -127,7 +129,7 @@ def getInterv(entry):
 
 '''Calculate center of bbox
 input:
-    entry : repository record
+    entry : repository record 
 output:
     center of Bounding Box as 2D point
 '''
@@ -248,7 +250,8 @@ output:
 def getTempExtSim(entryA,entryB):
     extA = getInterv(entryA["time"]).total_seconds()
     extB = getInterv(entryB["time"]).total_seconds()
-
+    if extA==0 or extB==0:
+        return 0
     if extA==0:
         extA=1
     if extB==0:
@@ -293,7 +296,11 @@ def getCenterGeoSim(entryA, entryB):
     sim = diagonal/circumf
     return sim
 
+
 def getCenterTempSim(entryA, entryB):
+    if getInterv(entryA["time"])==0 or getInterv(entryB["time"])==0:
+        return 0
+
     frmt = "%Y-%m-%dT%H:%M:%S%Z" 
     if entryA["time"][0]==entryA["time"][1]:
         centerA=entryA["time"][0]
@@ -433,6 +440,10 @@ output:
     similarityscore (in[0,1])
 '''
 def getInterTempSim(entryA,entryB):
+
+    if getInterv(entryA["time"])==0 or getInterv(entryB["time"])==0:
+        return 0
+
     #starting points of intervals A, B
     startA = datetime.strptime(entryA["time"][0])
     endA = datetime.strptime(entryA["time"][1])
@@ -508,6 +519,8 @@ output:
 
 '''
 def getTempDatSim(entryA,entryB):
+    if entryA["time"][0]==0 or entryB["time"][0]==0:
+        return 0
     if entryA["time"][0]==entryA["time"][1]:
         if entryB["time"][0]==entryB["time"][1]:
             return 1
