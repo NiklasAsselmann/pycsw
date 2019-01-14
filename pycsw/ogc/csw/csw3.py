@@ -1432,9 +1432,10 @@ class Csw3(object):
                 compared_record = record
         LOGGER.debug(compared_record)
         if 'compared_record' in locals():
-            simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
-                WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
-            LOGGER.debug(simscores)
+            #simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
+             #   WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
+            #LOGGER.debug(simscores)
+            pass
         else:
             return self.exceptionreport('RelatedDatasetNotFound', 'id',
                 'The related dataset could not be found')
