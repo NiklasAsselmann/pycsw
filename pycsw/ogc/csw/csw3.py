@@ -66,6 +66,8 @@ class Csw3(object):
         filtercaps = False
         languages = False
 
+        self.parent.kvp['outputformat'] = 'application/json'
+
         # validate acceptformats
         LOGGER.info('Validating ows20:AcceptFormats')
         LOGGER.debug(self.parent.context.model['operations']['GetCapabilities']['parameters']['acceptFormats']['values'])
@@ -1048,6 +1050,8 @@ class Csw3(object):
 
         LOGGER.debug("getRecordById")
 
+        self.parent.kvp['outputformat'] = 'application/json'
+
         if 'id' not in self.parent.kvp:
             return self.exceptionreport('MissingParameterValue', 'id',
             'Missing id parameter')
@@ -1178,6 +1182,7 @@ class Csw3(object):
 
     def getsimilarrecords(self, raw=False):
         ''' Handle GetSimilarRecords request '''
+        self.parent.kvp['outputformat'] = 'application/json'
 
         
         if 'id' not in self.parent.kvp:
