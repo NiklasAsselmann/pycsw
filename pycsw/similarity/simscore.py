@@ -36,6 +36,7 @@ input:
     l:          weight of location similarity
     g:          weight of spatial similarity
     t:          weight of temporal similarity
+    m:          max value for weights
 
 output:
     true:       if entries and cmp are all valid entries, n is a natural number, e,d,l,g,t are all 
@@ -341,7 +342,7 @@ output:
 def getCenterGeoSim(entryA, entryB):
     centerA = getCenter(entryA)
     centerB = getCenter(entryB)
-    diagonal = gDiag(centerA[1], centerB[1], centerA[0], centerB[0]
+    diagonal = gDiag(centerA[1], centerB[1], centerA[0], centerB[0])
     circumf = 20038
     sim = diagonal/circumf
     return sim
@@ -861,7 +862,7 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     
     while i < len(entries):
         min = heapq.heappop(records)
-        currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l)
+        currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)
         if min[1]<currscore:
             heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
         else:
@@ -873,9 +874,4 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     return output
 
 
-# du brauchst noch eine weitere Obermethode, die dann diese Methode aufruft, 
-# da die einzelnen Parameter noch aus der Konstanten-Datei gelesen werden müssen. 
-# Als Übergabe dafür, zu welchem Element similarRecords gesucht werde,n ist denke ich die uuid sinnvoll.
-# Als Rückgabewert wäre dann ein Array da [[uuid, simscore],[uuid, simscore],[uuid, simscore],...]
-# Dann können wir das gut in die API übernehmen.
 
