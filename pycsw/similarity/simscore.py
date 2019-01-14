@@ -43,7 +43,7 @@ output:
     false:      else
     
 '''
-def checkValidity(entries, cmp, n, e, d, l, g, t):
+def checkValidity(entries, cmp, n, e, d, l, g, t, m):
     #entries will be checked during iteration in main function
     #cmp
     if cmp is None or cmp["id"] is None:
@@ -51,9 +51,9 @@ def checkValidity(entries, cmp, n, e, d, l, g, t):
 
     #n will be checked inside main function
 
-    #e,d,g,l,t
+    #e,d,g,l,t,m
 
-    if e<0 or e>5 or d<0 or d>5 or l<0 or l>5 or g<0 or g>5 or t<0 or t>5:
+    if m<0 or e<0 or e>m or d<0 or d>m or l<0 or l>m or g<0 or g>m or t<0 or t>m:
         return False
 
 
@@ -840,11 +840,12 @@ getSimilarityScore: Berechnet den SimilarityScore
         d : weight of datatype similarity 
         e : weight of extent similarity 
         l : weight of location similarity
+        m : max value for weights
 '''
 
-def getSimilarRecords(entries, cmp, n, e, d, l, g, t):
+def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     
-    if checkValidity(entries, cmp, n, e, d, l, g, t) is False:
+    if checkValidity(entries, cmp, n, e, d, l, g, t, m) is False:
         return False
 
     if n>len(entries):
