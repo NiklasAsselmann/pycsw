@@ -66,6 +66,8 @@ class Csw3(object):
         filtercaps = False
         languages = False
 
+        self.parent.kvp['outputformat'] = 'application/json'
+
         # validate acceptformats
         LOGGER.info('Validating ows20:AcceptFormats')
         LOGGER.debug(self.parent.context.model['operations']['GetCapabilities']['parameters']['acceptFormats']['values'])
@@ -1048,6 +1050,8 @@ class Csw3(object):
 
         LOGGER.debug("getRecordById")
 
+        self.parent.kvp['outputformat'] = 'application/json'
+
         if 'id' not in self.parent.kvp:
             return self.exceptionreport('MissingParameterValue', 'id',
             'Missing id parameter')
@@ -1178,6 +1182,7 @@ class Csw3(object):
 
     def getsimilarrecords(self, raw=False):
         ''' Handle GetSimilarRecords request '''
+        self.parent.kvp['outputformat'] = 'application/json'
 
         
         if 'id' not in self.parent.kvp:
@@ -1427,9 +1432,10 @@ class Csw3(object):
                 compared_record = record
         LOGGER.debug(compared_record)
         if 'compared_record' in locals():
-            simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
-                WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
-            LOGGER.debug(simscores)
+            #simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
+             #   WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
+            #LOGGER.debug(simscores)
+            pass
         else:
             return self.exceptionreport('RelatedDatasetNotFound', 'id',
                 'The related dataset could not be found')
@@ -1863,6 +1869,12 @@ class Csw3(object):
                 if val:
                     etree.SubElement(record,
                     util.nspath_eval('dc:format',
+                    self.parent.context.namespaces)).text = val
+
+                val = util.getqattr(recobj, queryables['dc:vector_rep']['dbcol'])
+                if val:
+                    etree.SubElement(record,
+                    util.nspath_eval('dc:vector_rep',
                     self.parent.context.namespaces)).text = val
 
                 # links

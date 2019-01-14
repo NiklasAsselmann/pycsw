@@ -567,6 +567,10 @@ class Csw(object):
                     self.response = self.iface._write_acknowledgement()
                 else:
                     self.response = self.iface.getrecords()
+                LOGGER.debug(self.response)
+                LOGGER.debug(type(self.response))
+                LOGGER.debug(dir(self.response))
+                LOGGER.debug(str(self.response))
             elif self.kvp['request'] == 'GetRecordById':
                 self.response = self.iface.getrecordbyid()
                 LOGGER.debug("Selbst")
