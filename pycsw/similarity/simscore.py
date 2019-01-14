@@ -804,14 +804,14 @@ def getExSim(entryA, entryB, g, t, c):
 
 
 
-def getSimScoreTotal(entryA, entryB, g, t, e, d, l):
+def getSimScoreTotal(entryA, entryB, g, t, e, d, l, m):
 
     dSim = getIndSim(entryA, entryB, g, t, 2)
-    if l<3:
+    if l<=(m/2):
         lSim = getIndSim(entryA, entryB, g, t, 1)
     else: 
         lSim = getExSim(entryA, entryB, g, t, 1)
-    if e<3: 
+    if e<=(m/2): 
         eSim = getIndSim(entryA, entryB, g, t, 0)
     else: 
         eSim = getExSim(entryA, entryB, g, t, 0)
@@ -856,14 +856,14 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     i=0
 
     while i < n:
-        heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l)])
+        heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
         i=i+1
     
     while i < len(entries):
         min = heapq.heappop(records)
         currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l)
         if min[1]<currscore:
-            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l)])
+            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
         else:
             heapq.heappush(records, min)
         i=i+1
