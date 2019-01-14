@@ -85,7 +85,7 @@ Converts value in degree to radians
     output: input value converted to radians
 '''
 def ConvertToRadian(input):
-    return input * math.pi/ 180
+    return float(input) * math.pi/ 180
 
 
 #Calculates diagonal of Bounding Box by use of Haversine Formula
@@ -184,10 +184,10 @@ def getArea(coordinates):
 
     if (len(coordinates)>2):
         i=0
-        p1Lon = coordinates[i+2]
-        p1Lat = coordinates[i]
-        p2Lon = coordinates[i+3]
-        p2Lat = coordinates[i+1]
+        p1Lon = float(coordinates[i+2])
+        p1Lat = float(coordinates[i])
+        p2Lon = float(coordinates[i+3])
+        p2Lat = float(coordinates[i+1])
         area += ConvertToRadian(p2Lon - p1Lon) * (2 + math.sin(ConvertToRadian(p1Lat)) + math.sin(ConvertToRadian(p2Lat)))
 
         area = area * 6378137 * 6378137 / 2
@@ -205,6 +205,7 @@ def getAr(points):
     if (points[0]==points[1]) or (points[2]==points[3]):
         return 0
     return getArea(points)
+
 
 
 '''Points within limits of Bounding Box?
@@ -856,10 +857,12 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
 
     i=0
 
+    # First n entries are added to the priorityqueue
     while i < n:
         heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
         i=i+1
     
+    # Rest of entries are checked for better simscores
     while i < len(entries):
         min = heapq.heappop(records)
         currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)
@@ -869,7 +872,7 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
             heapq.heappush(records, min)
         i=i+1
     
-    output=sorted(records, key= lambda x: x[1])
+    output=sorted(records, key= lambda x: x[1], reverse=True)
 
     return output
 
