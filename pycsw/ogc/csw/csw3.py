@@ -1866,6 +1866,12 @@ class Csw3(object):
                     util.nspath_eval('dc:format',
                     self.parent.context.namespaces)).text = val
 
+                val = util.getqattr(recobj, queryables['dc:vector_rep']['dbcol'])
+                if val:
+                    etree.SubElement(record,
+                    util.nspath_eval('dc:vector_rep',
+                    self.parent.context.namespaces)).text = val
+
                 # links
                 rlinks = util.getqattr(recobj,
                 self.parent.context.md_core_model['mappings']['pycsw:Links'])
