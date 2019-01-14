@@ -36,6 +36,7 @@ input:
     l:          weight of location similarity
     g:          weight of spatial similarity
     t:          weight of temporal similarity
+    m:          max value for weights
 
 output:
     true:       if entries and cmp are all valid entries, n is a natural number, e,d,l,g,t are all 
@@ -43,26 +44,45 @@ output:
     false:      else
     
 '''
-def checkValidity(entries, cmp, n, e, d, l, g, t):
+def checkValidity(entries, cmp, n, e, d, l, g, t, m):
     #entries will be checked during iteration in main function
     #cmp
-    if cmp is None or cmp["id"] is None or cmp["wkt_geometry"] is None or len(cmp["wkt_geometry"])==0 or cmp["vector"] is None or len(cmp["vector"])==0:
+    if cmp is None or cmp["id"] is None:
         return False
 
     #n will be checked inside main function
 
-    #e,d,g,l,t
+    #e,d,g,l,t,m
 
-    if e<0 or e>5 or d<0 or d>5 or l<0 or l>5 or g<0 or g>5 or t<0 or t>5:
+    if m<0 or e<0 or e>m or d<0 or d>m or l<0 or l>m or g<0 or g>m or t<0 or t>m:
         return False
 
 
     return True
 
+
+
+def checkTempInput(entry):
+    if entry["time"] is None or entry["time"][0] is None or entry["time"][0]==0 or entry["time"][1] is None or entry["time"][1]==0:
+        return False
+    return True 
+
+
+def checkBboxInput(entry):
+    if entry["wkt_geometry"] is None or len(entry["wkt_geometry"])==0:
+        return False
+    return True
+
+def checkVectorInput(entry):
+    if entry["vector"] is None or len(entry["wkt_geometry"])==0:
+        return False
+    return True
+
+
 '''
 Converts value in degree to radians
-input:  value in degree
-output: input value converted to radians
+    input:  value in degree
+    output: input value converted to radians
 '''
 def ConvertToRadian(input):
     return input * math.pi/ 180
@@ -72,11 +92,11 @@ def ConvertToRadian(input):
 
 
 ''' Calculation of diagonal length
-Calculates length of bounding box for entry
-input: 
-    entry : record from repository
-output:   
-    diagonal length in m
+    Calculates length of bounding box for entry
+    input: 
+        entry : record from repository
+    output:   
+        diagonal length in m
 '''
 def getDiagonal(entry):
     lon1 = entry["wkt_geometry"][2]
@@ -88,12 +108,12 @@ def getDiagonal(entry):
 
 ''' Calculate Diagonal - inner function
 Calculates length of line between two points
-input: 
-    lat1, lon1 : coordinates first point
-    lat2, lon2 : coordinates second point
+    input: 
+        lat1, lon1 : coordinates first point
+        lat2, lon2 : coordinates second point
 
-output: 
-    diagonal length in m
+    output: 
+        diagonal length in m
 '''
 def gDiag(lat1,lat2,lon1,lon2):
     # convert decimal degrees to radians 
@@ -134,12 +154,21 @@ output:
     center of Bounding Box as 2D point
 '''
 def getCenter(entry):
-    minLon=entry["wkt_geometry"][2]
-    maxLon=entry["wkt_geometry"][3]
-    minLat=entry["wkt_geometry"][0]
-    maxLat=entry["wkt_geometry"][1]
-    lon = (minLon+maxLon)/2
-    lat = (minLat+maxLat)/2
+    lon1=entry["wkt_geometry"][2]
+    lon2=entry["wkt_geometry"][3]
+    lat1=entry["wkt_geometry"][0]
+    lat2=entry["wkt_geometry"][1]
+
+    lon1, lat1, lon2, lat2 = map(ConvertToRadian, [lon1, lat1, lon2, lat2])
+
+    dLon = lon2-lon1
+    x = math.cos(lat2) * math.cos(dLon)
+    y = math.cos(lat2) * math.sin(dLon)
+    lat = math.atan2(math.sin(lat1)+math.sin(lat2),math.sqrt( (math.cos(lat1)+x)*(math.cos(lat1)+x) + y*y) )
+    lon = lon1 + math.atan2(y, math.cos(lat1) + x)
+
+    lon = (lon+540)%360-180
+
     center = [lon,lat]
     return center
 
@@ -239,6 +268,25 @@ def getGeoExtSim(entryA, entryB):
     return sim
 
 
+'''Similarity of geographical extent
+Calculates similarity of geographical extent based on length of diagonals of bounding boxes
+input:
+    entryA, entryB : records from repository which are to be compared
+output:
+    similarityscore (in [0,1])
+TODO: implement more specific calc
+'''
+def getGeoExtSimE(entryA, entryB):
+    diagonalA=float(getDiagonal(entryA))
+    diagonalB=float(getDiagonal(entryB))
+    minV = min(diagonalA, diagonalB)
+    maxV = max(diagonalA, diagonalB)
+    if maxV == 0:
+        return 1
+    sim = float(minV/maxV)
+    return sim
+
+
 
 '''Similarity of temporal extent
 Calculates similarity of geographical extent based on length of diagonals of bounding boxes
@@ -289,9 +337,12 @@ input:
     entryA, entryB : records from repository which are to be compared
 output:
     similarityscore (in [0,1])
+
 '''
 def getCenterGeoSim(entryA, entryB):
-    diagonal = float(getDiagonal([[],[],[entryA[1], entryB[1]]]))
+    centerA = getCenter(entryA)
+    centerB = getCenter(entryB)
+    diagonal = gDiag(centerA[1], centerB[1], centerA[0], centerB[0])
     circumf = 20038
     sim = diagonal/circumf
     return sim
@@ -324,7 +375,7 @@ def getCenterTempSim(entryA, entryB):
 #########################################################################
 
 
-'''Calculate similarity based on intersecting area
+'''Calculate similarity based on intersecting area of bounding boxes
 Calculates whether two records intersect and, if so, size of intersection area in relation to size of record A
 input:
     entryA,entryB : records from repository which are to be compares
@@ -346,11 +397,7 @@ def getInterGeoSim(entryA,entryB):
     #disjunct?
     if minLonA > maxLonB or maxLonA < minLonB or maxLatA < minLatB or minLatA > maxLonB:
         return 0
-    
-    '''
-    Ich habe durch die Anpassung jetzt - meiner Ansicht nach - den Fall A und B sind beide Punkte/Linien
-    und überlagern sich und den Fall A ist <2-dimensional und B nicht 
-    '''
+
     #A in B 
     if minLonA >= minLonB and maxLonA <= maxLonB and minLonA >= minLonB and maxLonA <= maxLonB:
         return 1
@@ -429,6 +476,112 @@ def getInterGeoSim(entryA,entryB):
             lineA = getDiagonal(entryA)
             return float (line/lineA) 
     return float(intersecarea/areaA)
+
+
+'''Calculate similarity based on intersecting area of Polygon
+Calculates whether two records intersect and, if so, size of intersection area in relation to size of record A
+input:
+    entryA,entryB : records from repository which are to be compares
+output: 
+    similarityscore (in[0,1]) 
+
+TODO: implement exact calculation
+'''
+
+# Calculate intersection area of both bounding boxes 
+def getInterGeoSimE(entryA,entryB):
+    minLatA=entryA["wkt_geometry"][0]
+    maxLatA=entryA["wkt_geometry"][1]
+    minLonA=entryA["wkt_geometry"][2]
+    maxLonA=entryA["wkt_geometry"][3]
+    minLatB=entryB["wkt_geometry"][0]
+    maxLatB=entryB["wkt_geometry"][1]
+    minLonB=entryB["wkt_geometry"][2]
+    maxLonB=entryB["wkt_geometry"][3]
+    
+    #disjunct?
+    if minLonA > maxLonB or maxLonA < minLonB or maxLatA < minLatB or minLatA > maxLonB:
+        return 0
+    
+    #A in B 
+    if minLonA >= minLonB and maxLonA <= maxLonB and minLonA >= minLonB and maxLonA <= maxLonB:
+        return 1
+
+    areaA = getAr(entryA["wkt_geometry"])
+
+    #how many points of B in A?
+    points = pointsInBbox(entryA["wkt_geometry"], entryB["wkt_geometry"])
+
+    minLat=minLatA
+    minLon=minLonA
+    maxLat=maxLatA
+    maxLon=maxLonA
+
+    if points[0]==1:
+        minLon=minLonB
+        maxLat=maxLatB
+    
+    if points[1]==1:
+        maxLat=maxLatB
+        maxLon=maxLonB
+    
+    if points[2]==1:
+        minLat=minLatB
+        minLon=minLonB
+
+    if points[3]==1:
+        minLat=minLatB
+        maxLon=maxLonB
+    
+    #If only points of B are in A, but not of A in B
+    elif points[0]==0 and points[1]==0 and points[2]==0:
+        points = pointsInBbox(entryB["wkt_geometry"], entryA["wkt_geometry"])
+        unchanged = True
+        
+        if points[0]==1:
+            maxLon=maxLonB
+            minLat=minLatB
+            unchanged = False
+    
+        if points[1]==1:
+            minLat=minLatB
+            minLon=minLonB
+            unchanged = False
+    
+        if points[2]==1:
+            maxLat=maxLatB
+            maxLon=maxLonB
+            unchanged = False
+
+        if points[3]==1:
+            maxLat=maxLatB
+            minLon=minLonB
+            unchanged = False
+        
+       # intersection when one rectangle has both min and max Latitude and the other has min and max Longitude
+        if unchanged:
+            if minLatA<minLatB and maxLatA>maxLatB:
+                maxLat=maxLatB
+                minLat=minLatB
+                minLon=minLonA
+                maxLon=maxLonA
+            else:
+                maxLat=maxLatA
+                minLat=minLatA
+                minLon=minLonB
+                maxLon=maxLonB
+    intersecarea=getAr([minLat,maxLat,minLon,maxLon])
+
+    # if areaA is 0, A is either a point or a line. If it is a point, both cases (in B or outside B) are covered including return value above
+    # if A is a line and it is not entirely in B, the insersection area must still be 0:
+    if intersecarea == 0:
+        # Wenn A eine Linie ist, länge der geschnittenen Linie mit Länge der Gesamtlinie vergleichen
+        if areaA==0:
+            line = gDiag(minLat,maxLat,minLon,maxLon)
+            lineA = getDiagonal(entryA)
+            return float (line/lineA) 
+    return float(intersecarea/areaA)
+
 
 
 
@@ -547,35 +700,124 @@ output:
     similarityscore (in[0,1])        
 '''
 def getIndSim(entryA, entryB, g, t, c):
-    if c==0:
-        geoSim = getGeoExtSim(entryA,entryB)
-        tempSim = getTempExtSim(entryA,entryB)
-    if c==1:
-        geoInter = getInterGeoSim(entryA,entryB)
-        tempInter = getInterTempSim(entryA,entryB)
-        geoLoc = getCenterGeoSim(entryA,entryB)
-        tempLoc = getCenterTempSim(entryA,entryB)
+    tempA = checkTempInput(entryA)
+    tempB = checkTempInput(entryB)
+    bboxA = checkBboxInput(entryA)
+    bboxB = checkBboxInput(entryB)
+    vectorA = checkVectorInput(entryA)
+    vectorB = checkVectorInput(entryB)
 
-        geoSim = 0.6*geoInter + 0.4*geoLoc
-        tempSim = 0.6*tempInter + 0.4*tempLoc
+    geoSim = 0
+    tempSim = 0
+
+# Extent
+    if c==0:
+        if bboxA and bboxB:
+            geoSim = getGeoExtSim(entryA,entryB)
+        if tempA and tempB:
+            tempSim = getTempExtSim(entryA,entryB)
+# Location    
+    if c==1:
+        geoInter = 0
+        tempInter = 0
+        geoLoc = 0
+        tempLoc = 0
+
+        if bboxA and bboxB:
+            geoInter = getInterGeoSim(entryA,entryB)
+            geoLoc = getCenterGeoSim(entryA,entryB)
+        if tempA and tempB:
+            tempInter = getInterTempSim(entryA,entryB)
+            tempLoc = getCenterTempSim(entryA,entryB)
+
+        geoSim = 0.4*geoInter + 0.6*geoLoc
+        tempSim = 0.4*tempInter + 0.6*tempLoc
+# Datatype
     if c==2:
-        geoSim = getGeoDatSim(entryA,entryB)
-        tempSim = getTempDatSim(entryA,entryB)
-    else:
-        geoSim = 0
-        tempSim = 0
+        if vectorA and vectorB:
+            geoSim = getGeoDatSim(entryA,entryB)
+        if tempA and tempB:
+            tempSim = getTempDatSim(entryA,entryB)
+
     rel = g/(g+t)
     sim = rel*geoSim + (1-rel)*tempSim
 
     return sim 
 
 
-def getSimScoreTotal(entryA, entryB, g, t, e, d, l):
-    dSim = getIndSim(entryA, entryB, g, t, 2)
-    lSim = getIndSim(entryA, entryB, g, t, 1)
-    eSim = getIndSim(entryA, entryB, g, t, 0)
+'''Comibination of more exact calculation of individual similarity scores
+combines Geo and Temp Similarites for selected criterium c while taking into consideration weights for geographic and temporal similarity
+input:
+    entryA,entryB : records from repository which are to be compared
+    c : criterium 
+        c=0 for Similarity of extent
+        c=1 for Similarity of location
+    g : weight of geographic similarity
+    t : weight of temporal similarity
+output: 
+    similarityscore (in[0,1])        
+'''
+def getExSim(entryA, entryB, g, t, c):
+    tempA = checkTempInput(entryA)
+    tempB = checkTempInput(entryB)
+    bboxA = checkBboxInput(entryA)
+    bboxB = checkBboxInput(entryB)
+    vectorA = checkVectorInput(entryA)
+    vectorB = checkVectorInput(entryB)
 
-    simScore = 0.999*(e*eSim+l*lSim+d*dSim)
+    geoSim = 0
+    tempSim = 0
+
+# Extent
+    if c==0:
+        if vectorB and vectorA:
+            geoSim = getGeoExtSimE(entryA,entryB)
+        elif bboxA and bboxB:
+            geoSim = getGeoExtSim(entryA,entryB)
+        if tempA and tempB:
+            tempSim = getTempExtSim(entryA,entryB)
+# Location    
+    if c==1:
+        geoInter = 0
+        tempInter = 0
+        geoLoc = 0
+        tempLoc = 0
+
+        if vectorA and vectorB:
+            geoInter = getInterGeoSimE(entryA,entryB)
+            geoLoc = getCenterGeoSim(entryA,entryB)
+        elif bboxA and bboxB:
+            geoInter = getInterGeoSim(entryA,entryB)
+            geoLoc = getCenterGeoSim(entryA,entryB)
+        if tempA and tempB:
+            tempInter = getInterTempSim(entryA,entryB)
+            tempLoc = getCenterTempSim(entryA,entryB)
+
+        geoSim = 0.4*geoInter + 0.6*geoLoc
+        tempSim = 0.4*tempInter + 0.6*tempLoc
+
+    rel = g/(g+t)
+    sim = rel*geoSim + (1-rel)*tempSim
+
+    return sim 
+
+
+
+
+
+def getSimScoreTotal(entryA, entryB, g, t, e, d, l, m):
+
+    dSim = getIndSim(entryA, entryB, g, t, 2)
+    if l<=(m/2):
+        lSim = getIndSim(entryA, entryB, g, t, 1)
+    else: 
+        lSim = getExSim(entryA, entryB, g, t, 1)
+    if e<=(m/2): 
+        eSim = getIndSim(entryA, entryB, g, t, 0)
+    else: 
+        eSim = getExSim(entryA, entryB, g, t, 0)
+    
+    simScore = 0.999*((e/(e+d+l))*eSim+(l/(e+d+l))*lSim+(d/(e+d+l))*dSim)
 
     return simScore
 
@@ -599,11 +841,12 @@ getSimilarityScore: Berechnet den SimilarityScore
         d : weight of datatype similarity 
         e : weight of extent similarity 
         l : weight of location similarity
+        m : max value for weights
 '''
 
-def getSimilarRecords(entries, cmp, n, e, d, l, g, t):
+def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     
-    if checkValidity(entries, cmp, n, e, d, l, g, t) is False:
+    if checkValidity(entries, cmp, n, e, d, l, g, t, m) is False:
         return False
 
     if n>len(entries):
@@ -614,14 +857,14 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t):
     i=0
 
     while i < n:
-        heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l)])
+        heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
         i=i+1
     
     while i < len(entries):
         min = heapq.heappop(records)
-        currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l)
+        currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)
         if min[1]<currscore:
-            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l)])
+            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
         else:
             heapq.heappush(records, min)
         i=i+1
@@ -631,9 +874,4 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t):
     return output
 
 
-# du brauchst noch eine weitere Obermethode, die dann diese Methode aufruft, 
-# da die einzelnen Parameter noch aus der Konstanten-Datei gelesen werden müssen. 
-# Als Übergabe dafür, zu welchem Element similarRecords gesucht werde,n ist denke ich die uuid sinnvoll.
-# Als Rückgabewert wäre dann ein Array da [[uuid, simscore],[uuid, simscore],[uuid, simscore],...]
-# Dann können wir das gut in die API übernehmen.
 
