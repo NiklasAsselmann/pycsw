@@ -345,7 +345,7 @@ def getCenterGeoSim(entryA, entryB):
     centerB = getCenter(entryB)
     diagonal = gDiag(centerA[1], centerB[1], centerA[0], centerB[0])
     circumf = 20038
-    sim = diagonal/circumf
+    sim = 1-diagonal/circumf
     return sim
 
 
@@ -594,15 +594,15 @@ output:
     similarityscore (in[0,1])
 '''
 def getInterTempSim(entryA,entryB):
-
+    frmt = "%Y-%m-%dT%H:%M:%S%Z" 
     if getInterv(entryA["time"])==0 or getInterv(entryB["time"])==0:
         return 0
 
     #starting points of intervals A, B
-    startA = datetime.strptime(entryA["time"][0])
-    endA = datetime.strptime(entryA["time"][1])
-    startB = datetime.strptime(entryB["time"][0])
-    endB = datetime.strptime(entryB["time"][1])
+    startA = datetime.strptime(entryA["time"][0], frmt)
+    endA = datetime.strptime(entryA["time"][1], frmt)
+    startB = datetime.strptime(entryB["time"][0], frmt)
+    endB = datetime.strptime(entryB["time"][1], frmt)
 
     lengthA=getInterv(entryA["time"]).total_seconds
 
@@ -809,12 +809,15 @@ def getExSim(entryA, entryB, g, t, c):
 def getSimScoreTotal(entryA, entryB, g, t, e, d, l, m):
 
     dSim = getIndSim(entryA, entryB, g, t, 2)
+    print("dsim= "+str(dSim))
     if l<=(m/2):
         lSim = getIndSim(entryA, entryB, g, t, 1)
+        print("lSim= "+str(lSim))
     else: 
         lSim = getExSim(entryA, entryB, g, t, 1)
     if e<=(m/2): 
         eSim = getIndSim(entryA, entryB, g, t, 0)
+        print("eSim= "+str(eSim))
     else: 
         eSim = getExSim(entryA, entryB, g, t, 0)
     
@@ -875,6 +878,3 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     output=sorted(records, key= lambda x: x[1], reverse=True)
 
     return output
-
-
-
