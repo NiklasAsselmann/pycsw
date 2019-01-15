@@ -45,6 +45,7 @@ from pycsw.core.formats.fmt_json import xml2dict
 from pycsw.ogc.fes import fes2
 from pycsw.similarity import simscore
 import logging
+import ast
 
 LOGGER = logging.getLogger(__name__)
 
@@ -1420,8 +1421,11 @@ class Csw3(object):
             record_dict['id'] = record.identifier
             record_dict['wkt_geometry'] = computeBbox(record.wkt_geometry)
             record_dict['time'] = [record.time_begin, record.time_end]
-            record_dict['vector'] = record.vector_rep
-            #record_dict['raster'] = bool
+            try:
+                record_dict['vector'] = ast.literal_eval(record.vector_rep)
+            except:
+                record_dict['vector'] = None
+            record_dict['raster'] = None
             # record_dict['vecotr'] = 
             records_array.append(record_dict)
         LOGGER.debug(records_array)
@@ -1432,16 +1436,17 @@ class Csw3(object):
                 compared_record = record
         LOGGER.debug(compared_record)
         if 'compared_record' in locals():
-            #simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
-             #   WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM)
-            #LOGGER.debug(simscores)
+            simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
+                WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM, weight_max_value)
+            LOGGER.debug(simscores)
             pass
         else:
             return self.exceptionreport('RelatedDatasetNotFound', 'id',
                 'The related dataset could not be found')
         
         # simscores
-        simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
+        simScoreOutput = simscores
+        #simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
         simRecords = etree.SubElement(node, "similary_records")
         for elem in simScoreOutput:
             record = etree.SubElement(simRecords, "similarRecords")
@@ -1873,6 +1878,7 @@ class Csw3(object):
 
                 val = util.getqattr(recobj, queryables['dc:vector_rep']['dbcol'])
                 if val:
+                    #array_of_string = ast.literal_eval(val)
                     etree.SubElement(record,
                     util.nspath_eval('dc:vector_rep',
                     self.parent.context.namespaces)).text = val
