@@ -1406,6 +1406,8 @@ class Csw3(object):
         records_array = []
         for record in all_records: 
             record_dict = {}
+
+
             def computeBbox(wkt_geometry):
                 '''get bouding box of given wkt_geometry (poylgon)'''
                 wkt_geometry = str(wkt_geometry)
@@ -1418,6 +1420,8 @@ class Csw3(object):
                     if len(points) > 5:
                         return [points[0], points[1], points[4], points[5]]
                 return None
+
+
             record_dict['id'] = record.identifier
             record_dict['wkt_geometry'] = computeBbox(record.wkt_geometry)
             record_dict['time'] = [record.time_begin, record.time_end]
@@ -1426,7 +1430,7 @@ class Csw3(object):
             except:
                 record_dict['vector'] = None
             record_dict['raster'] = None
-            # record_dict['vecotr'] = 
+            
             records_array.append(record_dict)
         LOGGER.debug(records_array)
 
@@ -1434,7 +1438,7 @@ class Csw3(object):
         for record in records_array:
             if record['id'] == identifier:
                 compared_record = record
-        LOGGER.debug(compared_record)
+                LOGGER.debug(compared_record)
         if 'compared_record' in locals():
             simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
                 WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM, weight_max_value)
@@ -1444,11 +1448,8 @@ class Csw3(object):
             return self.exceptionreport('RelatedDatasetNotFound', 'id',
                 'The related dataset could not be found')
         
-        # simscores
-        simScoreOutput = simscores
-        #simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
-        simRecords = etree.SubElement(node, "similary_records")
-        for elem in simScoreOutput:
+        #simscores = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
+        for elem in simscores:
             simRecords = etree.SubElement(node, "similar_records")
             identifier = etree.SubElement(simRecords, "identifier")
             identifier.text = elem[0]
