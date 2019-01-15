@@ -1308,6 +1308,7 @@ class Csw3(object):
         metadatsimilarity = dict(self.parent.config.items('similarity')) # access similarity part of config file
         weight_min_value = 0.0
         weight_max_value = float(metadatsimilarity.get('max_value_for_weight'))
+        LIMIT_MAX_RECORDS = int(metadatsimilarity.get('number_max_show_limit'))
 
         MAX_NUMBER_RECORDS = None
         WEIGHT_SPATIAL_SIM = None
@@ -1320,15 +1321,15 @@ class Csw3(object):
             if parameter for the similary function is not changed in the request, take the default value from the config file
             if parameter is changed but in a wrong format, raise an error that is visible for the user
             if parameter is changed an in the right format, take the new parameter for the similarity calculation'''
-        if 'max_number' in self.parent.kvp:
+        if 'maxrecords' in self.parent.kvp:
             try:
-                MAX_NUMBER_RECORDS = int(self.parent.kvp['max_number'])
-                if MAX_NUMBER_RECORDS not in range(1, 21):
+                MAX_NUMBER_RECORDS = int(self.parent.kvp['maxrecords'])
+                if MAX_NUMBER_RECORDS not in range(1, LIMIT_MAX_RECORDS + 1):
                     return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value must be in the range [1,20]")    
+                 'elementsetname', "Parameter value must be in the range [1," + str(LIMIT_MAX_RECORDS) + "]")    
             except:
                 return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value of 'max_number' must be integer")
+                 'elementsetname', "Parameter value of 'maxrecords' must be integer")
         else:
             MAX_NUMBER_RECORDS = int(metadatsimilarity.get('number_max_show_records_default'))
         if 'spatial_weight' in self.parent.kvp:
@@ -1401,7 +1402,7 @@ class Csw3(object):
         WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_EXTENT_SIM])
 
         # get all records
-        all_records = self.parent.repository.query(constraint="")[1]
+        all_records = self.parent.repository.queryWithoutLimit(constraint="")[1]
 
         records_array = []
         for record in all_records: 
@@ -1420,7 +1421,10 @@ class Csw3(object):
                 return None
             record_dict['id'] = record.identifier
             record_dict['wkt_geometry'] = computeBbox(record.wkt_geometry)
-            record_dict['time'] = [record.time_begin, record.time_end]
+            if record.time_begin is None or record.time_end is None:
+                record_dict['time'] = None
+            else:
+                record_dict['time'] = [record.time_begin, record.time_end]
             try:
                 record_dict['vector'] = ast.literal_eval(record.vector_rep)
             except:
@@ -1429,6 +1433,9 @@ class Csw3(object):
             # record_dict['vecotr'] = 
             records_array.append(record_dict)
         LOGGER.debug(records_array)
+        LOGGER.debug(len(records_array))
+        for x in records_array:
+            LOGGER.debug(x['vector'])
 
         # get the dataset with the identifier required
         for record in records_array:
@@ -1447,6 +1454,15 @@ class Csw3(object):
         # simscores
         simScoreOutput = simscores
         #simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
+        for index, element in enumerate(simScoreOutput):
+            simScoreOutput[index][1] = round(float(element[1]), 5)
+        x = 0
+        simScoreOutput = sorted(simScoreOutput, key=lambda x: x[1], reverse=True)
+        while x < len(simScoreOutput):
+            if float(simScoreOutput[x][1]) == 0.0:
+                simScoreOutput.remove(simScoreOutput[x])
+            else:
+                x = x+1
         simRecords = etree.SubElement(node, "similary_records")
         for elem in simScoreOutput:
             record = etree.SubElement(simRecords, "similarRecords")
