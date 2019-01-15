@@ -1449,10 +1449,10 @@ class Csw3(object):
         #simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
         simRecords = etree.SubElement(node, "similary_records")
         for elem in simScoreOutput:
-            record = etree.SubElement(simRecords, "similarRecords")
-            identifier = etree.SubElement(record, "identifier")
+            simRecords = etree.SubElement(node, "similar_records")
+            identifier = etree.SubElement(simRecords, "identifier")
             identifier.text = elem[0]
-            simScore = etree.SubElement(record, "similarity_score")
+            simScore = etree.SubElement(simRecords, "similarity_score")
             simScore.text = str(elem[1])
             
 
