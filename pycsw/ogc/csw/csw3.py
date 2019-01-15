@@ -1882,6 +1882,18 @@ class Csw3(object):
                     etree.SubElement(record,
                     util.nspath_eval('dc:vector_rep',
                     self.parent.context.namespaces)).text = val
+                
+                val = util.getqattr(recobj, queryables['dc:time_begin']['dbcol'])
+                if val:
+                    etree.SubElement(record,
+                    util.nspath_eval('dc:time_begin',
+                    self.parent.context.namespaces)).text = val
+
+                val = util.getqattr(recobj, queryables['dc:time_end']['dbcol'])
+                if val:
+                    etree.SubElement(record,
+                    util.nspath_eval('dc:time_end',
+                    self.parent.context.namespaces)).text = val
 
                 # links
                 rlinks = util.getqattr(recobj,
