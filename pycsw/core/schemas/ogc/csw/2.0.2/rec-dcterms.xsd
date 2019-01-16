@@ -38,6 +38,10 @@
       substitutionGroup="dc:format"/>
    <xs:element name="extent" type="dc:SimpleLiteral"
    substitutionGroup="dc:vector_rep"/>
+   <xs:element name="extent" type="dc:SimpleLiteral"
+   substitutionGroup="dc:time_begin"/>
+   <xs:element name="extent" type="dc:SimpleLiteral"
+   substitutionGroup="dc:time_end"/>
    <xs:element name="hasFormat" type="dc:SimpleLiteral"
       substitutionGroup="dc:relation"/>
    <xs:element name="hasPart" type="dc:SimpleLiteral"
@@ -65,6 +69,10 @@
       substitutionGroup="dc:format"/>
    <xs:element name="medium" type="dc:SimpleLiteral"
       substitutionGroup="dc:vector_rep"/>
+   <xs:element name="medium" type="dc:SimpleLiteral"
+      substitutionGroup="dc:time_begin"/>
+   <xs:element name="medium" type="dc:SimpleLiteral"
+      substitutionGroup="dc:time_end"/>
    <xs:element name="modified" type="dc:SimpleLiteral"
       substitutionGroup="dc:date"/>
    <xs:element name="provenance" type="dc:SimpleLiteral"
