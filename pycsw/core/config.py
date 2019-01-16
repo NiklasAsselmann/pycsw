@@ -120,6 +120,9 @@ class StaticContext(object):
                 'pycsw:Keywords': 'keywords',
                 'pycsw:KeywordType': 'keywordstype',
                 'pycsw:Format': 'format',
+                'pycsw:Vector_rep': 'vector_rep',
+                'pycsw:Time_begin': 'time_begin',
+                'pycsw:Time_end': 'time_end',
                 'pycsw:Source': 'source',
                 'pycsw:Date': 'date',
                 'pycsw:Modified': 'date_modified',
@@ -327,6 +330,12 @@ class StaticContext(object):
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Type']},
                                 'dc:format':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Format']},
+                                'dc:vector_rep':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Vector_rep']},
+                                'dc:time_begin':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Time_begin']},
+                                'dc:time_end':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Time_end']},
                                 'dc:identifier123':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Identifier123']},
                                 'dc:source':
@@ -565,6 +574,12 @@ class StaticContext(object):
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Type']},
                                 'dc:format':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Format']},
+                                'dc:vector_rep':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Vector_rep']},
+                                'dc:time_begin':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Time_begin']},
+                                'dc:time_end':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Time_end']},
                                 'dc:identifier123':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Identifier123']},
                                 'dc:source':
@@ -626,6 +641,9 @@ class StaticContext(object):
             'dc:date': 'pycsw:Date',
             'dc:type': 'pycsw:Type',
             'dc:format': 'pycsw:Format',
+            'dc:vector_rep': 'pycsw:Vector_rep',
+            'dc:time_begin': 'pycsw:Time_begin',
+            'dc:time_end': 'pycsw:Time_end',
             'dc:identifier123': 'pycsw:Identifier123',
             'dc:source': 'pycsw:Source',
             'dc:language': 'pycsw:Language',
