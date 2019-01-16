@@ -1408,6 +1408,7 @@ class Csw3(object):
         for record in all_records: 
             record_dict = {}
             def computeBbox(wkt_geometry):
+                LOGGER.debug(wkt_geometry)
                 '''get bouding box of given wkt_geometry (poylgon)'''
                 wkt_geometry = str(wkt_geometry)
                 wkt_geometry = wkt_geometry[9:len(wkt_geometry)-2]
@@ -1830,7 +1831,7 @@ class Csw3(object):
 
         if ('elementname' in self.parent.kvp and
             len(self.parent.kvp['elementname']) > 0):
-            for req_term in ['dc:identifier123', 'dc:title']:
+            for req_term in ['dc:identifier', 'dc:title']:
                 if req_term not in self.parent.kvp['elementname']:
                     value = util.getqattr(recobj, queryables[req_term]['dbcol'])
                     etree.SubElement(record,
@@ -1864,9 +1865,9 @@ class Csw3(object):
                 self.parent.context.md_core_model['mappings']['pycsw:XML']), self.parent.context.parser)
 
             etree.SubElement(record,
-            util.nspath_eval('dc:identifier123', self.parent.context.namespaces)).text = \
+            util.nspath_eval('dc:identifier', self.parent.context.namespaces)).text = \
             util.getqattr(recobj,
-            self.parent.context.md_core_model['mappings']['pycsw:Identifier123'])
+            self.parent.context.md_core_model['mappings']['pycsw:Identifier'])
 
             for i in ['dc:title', 'dc:type']:
                 val = util.getqattr(recobj, queryables[i]['dbcol'])
