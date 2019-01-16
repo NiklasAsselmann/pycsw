@@ -1308,7 +1308,7 @@ class Csw3(object):
         metadatsimilarity = dict(self.parent.config.items('similarity')) # access similarity part of config file
         weight_min_value = 0.0
         weight_max_value = float(metadatsimilarity.get('max_value_for_weight'))
-        LIMIT_MAX_RECORDS = int(metadatsimilarity.get('number_max_show_limit'))
+        LIMIT_MAX_RECORDS = int(metadatsimilarity.get('limit_for_maxrecords'))
 
         MAX_NUMBER_RECORDS = None
         WEIGHT_SPATIAL_SIM = None
@@ -1326,78 +1326,78 @@ class Csw3(object):
                 MAX_NUMBER_RECORDS = int(self.parent.kvp['maxrecords'])
                 if MAX_NUMBER_RECORDS not in range(1, LIMIT_MAX_RECORDS + 1):
                     return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value must be in the range [1," + str(LIMIT_MAX_RECORDS) + "]")    
+                 'maxrecords', "Parameter value must be in the range [1," + str(LIMIT_MAX_RECORDS) + "]")    
             except:
                 return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value of 'maxrecords' must be integer")
+                 'maxrecords', "Parameter value of 'maxrecords' must be integer")
         else:
-            MAX_NUMBER_RECORDS = int(metadatsimilarity.get('number_max_show_records_default'))
+            MAX_NUMBER_RECORDS = int(metadatsimilarity.get('maxrecords'))
         if 'spatial_weight' in self.parent.kvp:
             try:
                 WEIGHT_SPATIAL_SIM = float(self.parent.kvp['spatial_weight'])
                 if WEIGHT_SPATIAL_SIM < weight_min_value or WEIGHT_SPATIAL_SIM > weight_max_value:
                     return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
+                 'spatial_weight', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value of 'spatial_weight' must be integer or float")
+                 'spatial_weight', "Parameter value of 'spatial_weight' must be integer or float")
         else:
-            WEIGHT_SPATIAL_SIM = int(metadatsimilarity.get('weight_spatial_sim_default'))
+            WEIGHT_SPATIAL_SIM = int(metadatsimilarity.get('spatial_weight'))
         if 'temp_weight' in self.parent.kvp:
             try:
                 EIGHT_TEMP_SIM = float(self.parent.kvp['temp_weight'])
                 if EIGHT_TEMP_SIM < weight_min_value or EIGHT_TEMP_SIM > weight_max_value:
                     return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
+                 'temp_weight', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value of 'temp_weight' must be integer or float")
+                 'temp_weight', "Parameter value of 'temp_weight' must be integer or float")
         else:
-            WEIGHT_TEMP_SIM = int(metadatsimilarity.get('weight_temporal_sim_default'))
+            WEIGHT_TEMP_SIM = int(metadatsimilarity.get('temp_weight'))
         if 'datatype_weight' in self.parent.kvp:
             try:
                 WEIGHT_DATATYPE_SIM = float(self.parent.kvp['datatype_weight'])
                 if WEIGHT_DATATYPE_SIM < weight_min_value or WEIGHT_DATATYPE_SIM > weight_max_value:
                     return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
+                 'datatype_weight', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value of 'datatype_weight' must be integer or float")
+                 'datatype_weight', "Parameter value of 'datatype_weight' must be integer or float")
         else:
-            WEIGHT_DATATYPE_SIM = int(metadatsimilarity.get('weight_datatype_sim_default'))
+            WEIGHT_DATATYPE_SIM = int(metadatsimilarity.get('datatype_weight'))
         if 'location_weight' in self.parent.kvp:
             try:
                 WEIGHT_LOCATION_SIM = float(self.parent.kvp['location_weight'])
                 if WEIGHT_LOCATION_SIM < weight_min_value or WEIGHT_LOCATION_SIM > weight_max_value:
                     return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
+                 'location_weight', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value of 'location_weight' must be integer or float")
+                 'location_weight', "Parameter value of 'location_weight' must be integer or float")
         else: 
-            WEIGHT_LOCATION_SIM = int(metadatsimilarity.get('weight_location_sim_default'))
+            WEIGHT_LOCATION_SIM = int(metadatsimilarity.get('location_weight'))
         if 'geographic_weight' in self.parent.kvp:
             try:
                 WEIGHT_GEOGRAPHIC_SIM = float(self.parent.kvp['geographic_weight'])
                 if WEIGHT_GEOGRAPHIC_SIM < weight_min_value or WEIGHT_GEOGRAPHIC_SIM > weight_max_value:
                     return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
+                 'geographic_weight', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value of 'geographic_weight' must be integer or float")
+                 'geographic_weight', "Parameter value of 'geographic_weight' must be integer or float")
         else:
-            WEIGHT_GEOGRAPHIC_SIM = int(metadatsimilarity.get('weight_geographic_sim_default'))
+            WEIGHT_GEOGRAPHIC_SIM = int(metadatsimilarity.get('geographic_weight'))
         if 'extent_weight' in self.parent.kvp:
             try:
                 WEIGHT_EXTENT_SIM = float(self.parent.kvp['extent_weight'])
                 if WEIGHT_EXTENT_SIM < weight_min_value or WEIGHT_EXTENT_SIM > weight_max_value:
                     return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
+                 'extent_weight', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
                 return self.exceptionreport('InvalidParameterValue',
-                 'elementsetname', "Parameter value of 'extent_weight' must be integer or float")
+                 'extent_weight', "Parameter value of 'extent_weight' must be integer or float")
         else: 
-            WEIGHT_EXTENT_SIM = int(metadatsimilarity.get('weight_extent_sim_default'))
+            WEIGHT_EXTENT_SIM = int(metadatsimilarity.get('extent_weight'))
         LOGGER.debug([MAX_NUMBER_RECORDS, WEIGHT_SPATIAL_SIM, WEIGHT_TEMP_SIM, WEIGHT_DATATYPE_SIM, 
         WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_EXTENT_SIM])
 
@@ -1443,37 +1443,41 @@ class Csw3(object):
                 compared_record = record
         LOGGER.debug(compared_record)
         if 'compared_record' in locals():
-            simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
-                WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM, weight_max_value)
-            LOGGER.debug(simscores)
-            pass
-        else:
-            return self.exceptionreport('RelatedDatasetNotFound', 'id',
-                'The related dataset could not be found')
-        
-        # simscores
-        simScoreOutput = simscores
-        #simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
-        for index, element in enumerate(simScoreOutput):
-            simScoreOutput[index][1] = round(float(element[1]), 5)
-        x = 0
-        simScoreOutput = sorted(simScoreOutput, key=lambda x: x[1], reverse=True)
-        while x < len(simScoreOutput):
-            if float(simScoreOutput[x][1]) == 0.0:
-                simScoreOutput.remove(simScoreOutput[x])
-            else:
-                x = x+1
-        simRecords = etree.SubElement(node, "similary_records")
-        for elem in simScoreOutput:
-            record = etree.SubElement(simRecords, "similarRecords")
-            identifier = etree.SubElement(record, "identifier")
-            identifier.text = elem[0]
-            simScore = etree.SubElement(record, "similarity_score")
-            simScore.text = str(elem[1])
-            
+            try:
+                simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
+                    WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM, weight_max_value)
+                LOGGER.debug(simscores)
+                # simscores
+                simScoreOutput = simscores
+                #simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
+                for index, element in enumerate(simScoreOutput):
+                    simScoreOutput[index][1] = round(float(element[1]), 5)
+                x = 0
+                simScoreOutput = sorted(simScoreOutput, key=lambda x: x[1], reverse=True)
+                while x < len(simScoreOutput):
+                    if float(simScoreOutput[x][1]) == 0.0:
+                        simScoreOutput.remove(simScoreOutput[x])
+                    else:
+                        x = x+1
+                if len(simScoreOutput) is 0:
+                    return self.exceptionreport('NotFound',
+                 'similary_records', "No similar records could be found")
+                simRecords = etree.SubElement(node, "similary_records")
+                for elem in simScoreOutput:
+                    record = etree.SubElement(simRecords, "similarRecords")
+                    identifier = etree.SubElement(record, "identifier")
+                    identifier.text = elem[0]
+                    simScore = etree.SubElement(record, "similarity_score")
+                    simScore.text = str(elem[1])     
 
-        LOGGER.debug(node) # <Element {http://www.opengis.net/cat/csw/3.0}SummaryRecord at 0x108cd64c8>
-        return node    
+                LOGGER.debug(node) # <Element {http://www.opengis.net/cat/csw/3.0}SummaryRecord at 0x108cd64c8>
+                return node  
+            except:
+                raise Exception('Invalid parameters for similarity function.')
+
+        else:
+            raise Exception('The related dataset could not be found.')
+  
 
     def getrepositoryitem(self):
         ''' Handle GetRepositoryItem request '''
