@@ -128,6 +128,7 @@ class APISO(profile.Profile):
                         #'apiso:Date': 'dc:date',
                         'apiso:Type': 'dc:type',
                         'apiso:Format': 'dc:format',
+                        'apiso:Vector_rep': 'dc:vector_rep',
                         'apiso:Language': 'dc:language',
                         'apiso:Relation': 'dc:relation',
                         'apiso:AccessConstraints': 'dc:rights',

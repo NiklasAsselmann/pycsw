@@ -171,6 +171,8 @@ def setup_db(database, table, home, create_sfsql_tables=True, create_plpythonu_f
         Column('distanceuom', Text, index=True),
         Column('wkt_geometry', Text),
 
+        Column('vector_rep', Text),
+
         # service
         Column('servicetype', Text, index=True),
         Column('servicetypeversion', Text, index=True),

@@ -132,6 +132,9 @@ class Csw(object):
         self.context.pycsw_home = self.config.get('server', 'home')
         self.context.url = self.config.get('server', 'url')
 
+        #if self.config.has_option('server', 'url'):
+        #    self.config.get('server', 'url')
+
         log.setup_logger(self.config)
 
         LOGGER.info('running configuration %s', rtconfig)
@@ -564,6 +567,10 @@ class Csw(object):
                     self.response = self.iface._write_acknowledgement()
                 else:
                     self.response = self.iface.getrecords()
+                LOGGER.debug(self.response)
+                LOGGER.debug(type(self.response))
+                LOGGER.debug(dir(self.response))
+                LOGGER.debug(str(self.response))
             elif self.kvp['request'] == 'GetRecordById':
                 self.response = self.iface.getrecordbyid()
                 LOGGER.debug("Selbst")
@@ -694,10 +701,8 @@ class Csw(object):
             appinfo = '<!-- pycsw %s -->\n' % self.context.version
 
         else:  # it's json
-            if 'outputformat' in self.kvp:
-                self.contenttype = self.kvp['outputformat']
-            else:
-                self.contenttype = self.mimetype
+
+            self.contenttype = "application/json"
 
             from pycsw.core.formats import fmt_json
             response = fmt_json.xml2json(response,
@@ -706,8 +711,6 @@ class Csw(object):
         
         if isinstance(self.contenttype, bytes):
             self.contenttype = self.contenttype.decode()
-        LOGGER.debug(xmldecl)
-        LOGGER.debug(appinfo)
         LOGGER.debug(response)
         #response = '{"csw30:SummaryRecord": {"dc:identifier123": "urn:uuid:a06af396-3105-442d-8b40-22b57a90d2f2","dc:title": "Lorem ipsum dolor sit amet hallo hallo","dc:type": "http://purl.org/dc/dcmitype/Image","dc:format": "image/jpeg", "hallo": {"hallo": "hallo"}}}'
         s = (u'%s%s%s' % (xmldecl, appinfo, response)).encode(self.encoding)
