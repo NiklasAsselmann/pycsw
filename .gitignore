@@ -25,3 +25,5 @@ tests/results
 # shell files
 .env
 .envrc
+
+tests/functionaltests/suites/cite/data/cite\.db

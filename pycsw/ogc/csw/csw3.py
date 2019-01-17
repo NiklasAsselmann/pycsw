@@ -1047,7 +1047,22 @@ class Csw3(object):
             return node
 
     def getrecordbyid(self, raw=False):
-        ''' Handle GetRecordById request '''
+        ''' Handle GetRecordById request:
+        executes normal getrecordbyid request with the similarity extension
+        first collect all records from the csw, then call a similarity function 
+        and output their identifiers with the related sim score
+        
+        the following parameters can be given to the request to calculate a user-specific similarity output:
+         - maxrecords - max. number of similarity records shown
+         - spatial_weight - adjust how relevant the spatial factor should be in the similarity function (the bigger the weight, the more relevant)
+         - temp_weight - adjust how relevant the temporal atial factor should be in the similarity function (the bigger the weight, the more relevant)
+         - datatype_weight - adjust how relevant the datatype factor should be in the similarity function (the bigger the weight, the more relevant)
+         - location_weight - adjust how relevant the location factor should be in the similarity function (the bigger the weight, the more relevant)
+         - geographic_weight - adjust how relevant the geographic factor should be in the similarity function (the bigger the weight, the more relevant)
+         - extent_weight - adjust how relevant the extent factor should be in the similarity function (the bigger the weight, the more relevant)
+
+         the default values for these, the maximal value for a weight and the limit for 'maxrecords' are set in the preferences.cfg-file 
+        '''
 
         LOGGER.debug("getRecordById")
 
@@ -1183,8 +1198,6 @@ class Csw3(object):
 
     def getsimilarrecords(self, raw=False):
         ''' Handle GetSimilarRecords request '''
-        self.parent.kvp['outputformat'] = 'application/json'
-
         
         if 'id' not in self.parent.kvp:
             return self.exceptionreport('MissingParameterValue', 'id',
@@ -1255,16 +1268,6 @@ class Csw3(object):
             and self.parent.kvp['outputschema'] ==
             'http://www.opengis.net/cat/csw/3.0'):
                 # serialize record inline
-                
-                LOGGER.debug("Selbst")
-                LOGGER.debug(self.parent.context.md_core_model['mappings']['pycsw:Typename'])
-                LOGGER.debug("uoou" + str(util.getqattr(result, self.parent.context.md_core_model['mappings']['pycsw:XML'])))
-                #LOGGER.debug(simScoreOutput)
-                #LOGGER.debug(output)
-                #LOGGER.debug(util.getqattr(result, self.parent.repository.queryables['_all']))
-                LOGGER.debug(type(result))
-                LOGGER.debug(type(results))
-
                 node = self._write_record(
                 result, self.parent.repository.queryables['_all'])
 
@@ -1287,7 +1290,6 @@ class Csw3(object):
                     )
 
                 node = self._write_record( result, self.parent.repository.queryables['_all'])
-                LOGGER.debug(util.getqattr(node, self.parent.context.md_core_model['mappings']['pycsw:XML']))
             elif self.parent.kvp['outputschema'] in self.parent.outputschemas:  # use outputschema serializer
                 node = self.parent.outputschemas[self.parent.kvp['outputschema']].write_record(result, self.parent.kvp['elementsetname'], self.parent.context, self.parent.config.get('server', 'url'))
             else:  # it's a profile output
@@ -1302,9 +1304,9 @@ class Csw3(object):
             return self.exceptionreport('NotFound', 'id',
             'No repository item found for \'%s\'' % self.parent.kvp['id'])
        
-
+        # identifier of the request
         identifier = self.parent.kvp['id']
-        LOGGER.debug(identifier)
+        # config values of the submodule 'similarity'
         metadatsimilarity = dict(self.parent.config.items('similarity')) # access similarity part of config file
         weight_min_value = 0.0
         weight_max_value = float(metadatsimilarity.get('max_value_for_weight'))
@@ -1398,6 +1400,7 @@ class Csw3(object):
                  'extent_weight', "Parameter value of 'extent_weight' must be integer or float")
         else: 
             WEIGHT_EXTENT_SIM = int(metadatsimilarity.get('extent_weight'))
+
         LOGGER.debug([MAX_NUMBER_RECORDS, WEIGHT_SPATIAL_SIM, WEIGHT_TEMP_SIM, WEIGHT_DATATYPE_SIM, 
         WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_EXTENT_SIM])
 
@@ -1408,9 +1411,9 @@ class Csw3(object):
         for record in all_records: 
             record_dict = {}
             def computeBbox(wkt_geometry):
-                LOGGER.debug(wkt_geometry)
                 '''get bouding box of given wkt_geometry (poylgon)'''
                 wkt_geometry = str(wkt_geometry)
+                LOGGER.debug(wkt_geometry)
                 wkt_geometry = wkt_geometry[9:len(wkt_geometry)-2]
                 coordinates = wkt_geometry.split(", ")
                 points = []
@@ -1420,6 +1423,8 @@ class Csw3(object):
                     if len(points) > 5:
                         return [points[0], points[1], points[4], points[5]]
                 return None
+
+            # create record_dict from relevant data
             record_dict['id'] = record.identifier
             record_dict['wkt_geometry'] = computeBbox(record.wkt_geometry)
             if record.time_begin is None or record.time_end is None:
@@ -1431,7 +1436,6 @@ class Csw3(object):
             except:
                 record_dict['vector'] = None
             record_dict['raster'] = None
-            # record_dict['vecotr'] = 
             records_array.append(record_dict)
         LOGGER.debug(records_array)
         LOGGER.debug(len(records_array))
@@ -1445,12 +1449,11 @@ class Csw3(object):
         LOGGER.debug(compared_record)
         if 'compared_record' in locals():
             try:
+                # call similarity function from parameters
                 simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
                     WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM, weight_max_value)
                 LOGGER.debug(simscores)
-                # simscores
                 simScoreOutput = simscores
-                #simScoreOutput = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
                 for index, element in enumerate(simScoreOutput):
                     simScoreOutput[index][1] = round(float(element[1]), 5)
                 x = 0
@@ -1463,6 +1466,7 @@ class Csw3(object):
                 if len(simScoreOutput) is 0:
                     return self.exceptionreport('NotFound',
                  'similary_records', "No similar records could be found")
+                # write similarity scores in the response
                 simRecords = etree.SubElement(node, "similary_records")
                 for elem in simScoreOutput:
                     record = etree.SubElement(simRecords, "similarRecords")
