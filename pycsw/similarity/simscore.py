@@ -1,6 +1,6 @@
 import math
 import heapq
-from datetime import datetime
+import datetime
 import dateutil.parser
 
 
@@ -74,7 +74,7 @@ def checkBboxInput(entry):
     return True
 
 def checkVectorInput(entry):
-    if entry["vector"] is None or len(entry["wkt_geometry"])==0:
+    if entry["vector"] is None or len(entry["vector"])==0:
         return False
     return True
 
@@ -143,8 +143,8 @@ def getInterv(entry):
         return 0
     t1 = entry[0]
     t2 = entry[1]
-    frmt = "%Y-%m-%dT%H:%M:%S%Z" 
-    tdelta = datetime.strptime(t2, frmt) - datetime.strptime(t1, frmt)
+    frmt = "%Y-%m-%dT%H:%M:%SZ" 
+    tdelta = datetime.datetime.strptime(t2, frmt) - datetime.datetime.strptime(t1, frmt)
     return tdelta
 
 '''Calculate center of bbox
@@ -353,20 +353,20 @@ def getCenterTempSim(entryA, entryB):
     if getInterv(entryA["time"])==0 or getInterv(entryB["time"])==0:
         return 0
 
-    frmt = "%Y-%m-%dT%H:%M:%S%Z" 
+    frmt = "%Y-%m-%dT%H:%M:%SZ" 
     if entryA["time"][0]==entryA["time"][1]:
         centerA=entryA["time"][0]
     else: 
-        centerA=datetime.strptime(entryA["time"][0],frmt)+(getInterv(entryA["time"])/2)
+        centerA=datetime.datetime.strptime(entryA["time"][0],frmt)+(getInterv(entryA["time"])/2)
     if entryB["time"][0]==entryB["time"][1]:
         centerB=entryB["time"][0]
     else: 
-        centerB=datetime.strptime(entryB["time"][0],frmt)+(getInterv(entryB["time"])/2)
+        centerB=datetime.datetime.strptime(entryB["time"][0],frmt)+(getInterv(entryB["time"])/2)
 
     tdelta = centerA-centerB
-    tdelta = tdelta.total_seconds
+    tdelta = tdelta.total_seconds()
 
-    max = datetime.timedelta(days=365000).total_seconds
+    max = datetime.timedelta(days=365000).total_seconds()
 
     return tdelta/max
 
@@ -594,17 +594,17 @@ output:
     similarityscore (in[0,1])
 '''
 def getInterTempSim(entryA,entryB):
-    frmt = "%Y-%m-%dT%H:%M:%S%Z" 
+    frmt = "%Y-%m-%dT%H:%M:%SZ" 
     if getInterv(entryA["time"])==0 or getInterv(entryB["time"])==0:
         return 0
-
+    interv=float(0)
     #starting points of intervals A, B
-    startA = datetime.strptime(entryA["time"][0], frmt)
-    endA = datetime.strptime(entryA["time"][1], frmt)
-    startB = datetime.strptime(entryB["time"][0], frmt)
-    endB = datetime.strptime(entryB["time"][1], frmt)
+    startA = datetime.datetime.strptime(entryA["time"][0], frmt)
+    endA = datetime.datetime.strptime(entryA["time"][1], frmt)
+    startB = datetime.datetime.strptime(entryB["time"][0], frmt)
+    endB = datetime.datetime.strptime(entryB["time"][1], frmt)
 
-    lengthA=getInterv(entryA["time"]).total_seconds
+    lengthA=getInterv(entryA["time"]).total_seconds()
 
     #disjunct
     if startA>endB or startB>endA:
@@ -621,9 +621,9 @@ def getInterTempSim(entryA,entryB):
     elif startB>startA:
         #B in A
         if endB<endA:
-            interv = getInterv(entryB["time"]).total_seconds
+            interv = getInterv(entryB["time"]).total_seconds()
         else:
-            interv = getInterv([startB,endA]).total_seconds
+            interv = getInterv([startB,endA]).total_seconds()
     
     res = interv/lengthA
     return res
@@ -878,3 +878,40 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     output=sorted(records, key= lambda x: x[1], reverse=True)
 
     return output
+
+
+
+
+
+entry1 ={
+        "id" : 'idOfTheEntry',
+        "wkt_geometry" : [1,1,1,1],
+        "vector" : [[1,1],[2,2],[3,3],[4,4]],
+        "time" : [None, None],
+        "raster"  : False
+    }
+
+entry2 ={
+        "id" : 'idOfTheEntry',
+        "wkt_geometry" : [1,1,1,1],
+        "vector" : [[1,1],[2,2],[3,3],[4,4]],
+        "time" : [None, None],
+        "raster"  : False
+    }
+
+entry4 ={
+        "id" : 'idOfTheEntry',
+        "wkt_geometry" : [1,1,1,1],
+        "vector" : [[11,11],[12,12],[13,13],[14,14]],
+        "time" : [None, None],
+        "raster"  : False
+    }    
+entry3 ={
+        "id" : 'idOfTheEntry',
+        "wkt_geometry" : [2,2,2,2],
+        "vector" : [[2,2]],
+        "time" : [None, None],
+        "raster"  : False
+    }
+
+print(getSimilarRecords([entry2, entry3, entry4], entry1, 3, 2, 2, 2, 2, 0, 5))
