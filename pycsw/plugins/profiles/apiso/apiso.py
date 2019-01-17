@@ -66,7 +66,7 @@ class APISO(profile.Profile):
                         'apiso:Title': {'xpath': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:citation/gmd:CI_Citation/gmd:title/gco:CharacterString', 'dbcol': self.context.md_core_model['mappings']['pycsw:Title']},
                         'apiso:Abstract': {'xpath': 'gmd:identificationInfo/gmd:MD_DataIdentification/gmd:abstract/gco:CharacterString', 'dbcol': self.context.md_core_model['mappings']['pycsw:Abstract']},
                         'apiso:Format': {'xpath': 'gmd:distributionInfo/gmd:MD_Distribution/gmd:distributionFormat/gmd:MD_Format/gmd:name/gco:CharacterString', 'dbcol': self.context.md_core_model['mappings']['pycsw:Format']},
-                        'apiso:Identifier123': {'xpath': 'gmd:fileIdentifier/gco:CharacterString', 'dbcol': self.context.md_core_model['mappings']['pycsw:Identifier123']},
+                        'apiso:Identifier': {'xpath': 'gmd:fileIdentifier/gco:CharacterString', 'dbcol': self.context.md_core_model['mappings']['pycsw:Identifier']},
                         'apiso:Modified': {'xpath': 'gmd:dateStamp/gco:Date', 'dbcol': self.context.md_core_model['mappings']['pycsw:Modified']},
                         'apiso:Type': {'xpath': 'gmd:hierarchyLevel/gmd:MD_ScopeCode', 'dbcol': self.context.md_core_model['mappings']['pycsw:Type']},
                         'apiso:BoundingBox': {'xpath': 'apiso:BoundingBox', 'dbcol': self.context.md_core_model['mappings']['pycsw:BoundingBox']},
@@ -402,7 +402,7 @@ class APISO(profile.Profile):
         '%s %s/csw/2.0.2/profiles/apiso/1.0.0/apiso.xsd' % (self.namespace, self.ogc_schemas_base)
 
         # identifier
-        idval = util.getqattr(result, self.context.md_core_model['mappings']['pycsw:Identifier123'])
+        idval = util.getqattr(result, self.context.md_core_model['mappings']['pycsw:Identifier'])
 
         identifier = etree.SubElement(node, util.nspath_eval('gmd:fileIdentifier', self.namespaces))
         etree.SubElement(identifier, util.nspath_eval('gco:CharacterString', self.namespaces)).text = idval

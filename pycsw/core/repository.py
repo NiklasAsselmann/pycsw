@@ -204,11 +204,11 @@ class Repository(object):
         ''' Query by list of identifiers '''
 
         column = getattr(self.dataset, \
-        self.context.md_core_model['mappings']['pycsw:Identifier123'])
+        self.context.md_core_model['mappings']['pycsw:Identifier'])
         LOGGER.debug("self.context")
         LOGGER.debug(self.context)
-        LOGGER.debug("self.context.md_core_model['mappings']['pycsw:Identifier123'])")
-        LOGGER.debug(self.context.md_core_model['mappings']['pycsw:Identifier123'])
+        LOGGER.debug("self.context.md_core_model['mappings']['pycsw:Identifier'])")
+        LOGGER.debug(self.context.md_core_model['mappings']['pycsw:Identifier'])
         query = self.session.query(self.dataset).filter(column.in_(ids))
         return self._get_repo_filter(query).all()
 
