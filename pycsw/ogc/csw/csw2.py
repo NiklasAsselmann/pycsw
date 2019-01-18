@@ -611,6 +611,11 @@ class Csw2(object):
                     LOGGER.exception('No results for propertynames')
         return node
 
+    def getsimilarrecords(self):
+        return self.exceptionreport('NoApplicableCode',
+            'getSimilarRecords',
+            'The getSimilarRecords request is only supported for CSW 3.0.0')
+
     def getrecords(self):
         ''' Handle GetRecords request '''
 

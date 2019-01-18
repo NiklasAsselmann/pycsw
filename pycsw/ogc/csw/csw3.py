@@ -1347,8 +1347,8 @@ class Csw3(object):
             WEIGHT_SPATIAL_SIM = int(metadatsimilarity.get('spatial_weight'))
         if 'temp_weight' in self.parent.kvp:
             try:
-                EIGHT_TEMP_SIM = float(self.parent.kvp['temp_weight'])
-                if EIGHT_TEMP_SIM < weight_min_value or EIGHT_TEMP_SIM > weight_max_value:
+                WEIGHT_TEMP_SIM = float(self.parent.kvp['temp_weight'])
+                if WEIGHT_TEMP_SIM < weight_min_value or WEIGHT_TEMP_SIM > weight_max_value:
                     return self.exceptionreport('InvalidParameterValue',
                  'temp_weight', "Parameter value must be in the range [%s, %s]" % (weight_min_value, weight_max_value)) 
             except:
