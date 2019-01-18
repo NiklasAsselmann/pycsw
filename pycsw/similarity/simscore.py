@@ -54,7 +54,7 @@ def checkValidity(entries, cmp, n, e, d, l, g, t, m):
 
     #e,d,g,l,t,m
 
-    if m<0 or e<0 or e>m or d<0 or d>m or l<0 or l>m or g<0 or g>m or t<0 or t>m:
+    if m<0 or e<0 or e>m or d<0 or d>m or l<0 or l>m or g<0 or g>m or t<0 or t>m or (g==0 and t==0):
         return False
 
 
@@ -69,7 +69,7 @@ def checkTempInput(entry):
 
 
 def checkBboxInput(entry):
-    if entry["wkt_geometry"] is None or len(entry["wkt_geometry"])==0:
+    if entry["wkt_geometry"] is None or len(entry["wkt_geometry"])<=3:
         return False
     return True
 
@@ -99,10 +99,10 @@ def ConvertToRadian(input):
         diagonal length in m
 '''
 def getDiagonal(entry):
-    lon1 = entry["wkt_geometry"][2]
-    lon2 = entry["wkt_geometry"][3]
-    lat2 = entry["wkt_geometry"][1]
-    lat1 = entry["wkt_geometry"][0]
+    lon1 = entry["wkt_geometry"][0]
+    lon2 = entry["wkt_geometry"][2]
+    lat2 = entry["wkt_geometry"][3]
+    lat1 = entry["wkt_geometry"][1]
 
     return gDiag(lat1,lat2,lon1,lon2)
 
@@ -154,10 +154,10 @@ output:
     center of Bounding Box as 2D point
 '''
 def getCenter(entry):
-    lon1=entry["wkt_geometry"][2]
-    lon2=entry["wkt_geometry"][3]
-    lat1=entry["wkt_geometry"][0]
-    lat2=entry["wkt_geometry"][1]
+    lon1=entry["wkt_geometry"][0]
+    lon2=entry["wkt_geometry"][2]
+    lat1=entry["wkt_geometry"][1]
+    lat2=entry["wkt_geometry"][3]
 
     lon1, lat1, lon2, lat2 = map(ConvertToRadian, [lon1, lat1, lon2, lat2])
 
@@ -184,10 +184,10 @@ def getArea(coordinates):
 
     if (len(coordinates)>2):
         i=0
-        p1Lon = float(coordinates[i+2])
-        p1Lat = float(coordinates[i])
-        p2Lon = float(coordinates[i+3])
-        p2Lat = float(coordinates[i+1])
+        p1Lon = float(coordinates[i])
+        p1Lat = float(coordinates[i+1])
+        p2Lon = float(coordinates[i+2])
+        p2Lat = float(coordinates[i+3])
         area += ConvertToRadian(p2Lon - p1Lon) * (2 + math.sin(ConvertToRadian(p1Lat)) + math.sin(ConvertToRadian(p2Lat)))
 
         area = area * 6378137 * 6378137 / 2
@@ -223,10 +223,10 @@ output:
 def pointsInBbox(pointsA, pointsB):
     points = [[pointsB[1],pointsB[2]], [pointsB[1],pointsB[3]], [pointsB[0],pointsB[2]], [pointsB[0],pointsB[3]]]
 
-    minLat=pointsA[0]
-    maxLat=pointsA[1]
-    minLon=pointsA[2]
-    maxLon=pointsA[3]
+    minLat=pointsA[1]
+    maxLat=pointsA[3]
+    minLon=pointsA[0]
+    maxLon=pointsA[2]
 
     i=0
     res = [0,0,0,0]
@@ -344,8 +344,9 @@ def getCenterGeoSim(entryA, entryB):
     centerA = getCenter(entryA)
     centerB = getCenter(entryB)
     diagonal = gDiag(centerA[1], centerB[1], centerA[0], centerB[0])
-    circumf = 20038
-    sim = 1-diagonal/circumf
+    circumf = 20038000
+    print("diagonal: "+str(diagonal))
+    sim = 1-(diagonal/circumf)
     return sim
 
 
@@ -386,14 +387,14 @@ output:
 
 # Calculate intersection area of both bounding boxes
 def getInterGeoSim(entryA,entryB):
-    minLatA=entryA["wkt_geometry"][0]
-    maxLatA=entryA["wkt_geometry"][1]
-    minLonA=entryA["wkt_geometry"][2]
-    maxLonA=entryA["wkt_geometry"][3]
-    minLatB=entryB["wkt_geometry"][0]
-    maxLatB=entryB["wkt_geometry"][1]
-    minLonB=entryB["wkt_geometry"][2]
-    maxLonB=entryB["wkt_geometry"][3]
+    minLatA=entryA["wkt_geometry"][1]
+    maxLatA=entryA["wkt_geometry"][3]
+    minLonA=entryA["wkt_geometry"][0]
+    maxLonA=entryA["wkt_geometry"][2]
+    minLatB=entryB["wkt_geometry"][1]
+    maxLatB=entryB["wkt_geometry"][3]
+    minLonB=entryB["wkt_geometry"][0]
+    maxLonB=entryB["wkt_geometry"][2]
     
     #disjunct?
     if minLonA > maxLonB or maxLonA < minLonB or maxLatA < minLatB or minLatA > maxLonB:
@@ -491,14 +492,14 @@ TODO: implement exact calculation
 
 # Calculate intersection area of both bounding boxes 
 def getInterGeoSimE(entryA,entryB):
-    minLatA=entryA["wkt_geometry"][0]
-    maxLatA=entryA["wkt_geometry"][1]
-    minLonA=entryA["wkt_geometry"][2]
-    maxLonA=entryA["wkt_geometry"][3]
-    minLatB=entryB["wkt_geometry"][0]
-    maxLatB=entryB["wkt_geometry"][1]
-    minLonB=entryB["wkt_geometry"][2]
-    maxLonB=entryB["wkt_geometry"][3]
+    minLatA=entryA["wkt_geometry"][1]
+    maxLatA=entryA["wkt_geometry"][3]
+    minLonA=entryA["wkt_geometry"][0]
+    maxLonA=entryA["wkt_geometry"][2]
+    minLatB=entryB["wkt_geometry"][1]
+    maxLatB=entryB["wkt_geometry"][3]
+    minLonB=entryB["wkt_geometry"][0]
+    maxLonB=entryB["wkt_geometry"][2]
     
     #disjunct?
     if minLonA > maxLonB or maxLonA < minLonB or maxLatA < minLatB or minLatA > maxLonB:
@@ -730,7 +731,7 @@ def getIndSim(entryA, entryB, g, t, c):
         if tempA and tempB:
             tempInter = getInterTempSim(entryA,entryB)
             tempLoc = getCenterTempSim(entryA,entryB)
-
+        print("geoInter :"+str(geoInter)+" geoLoc: "+str(geoLoc))
         geoSim = 0.4*geoInter + 0.6*geoLoc
         tempSim = 0.4*tempInter + 0.6*tempLoc
 # Datatype
@@ -809,20 +810,31 @@ def getExSim(entryA, entryB, g, t, c):
 def getSimScoreTotal(entryA, entryB, g, t, e, d, l, m):
 
     dSim = getIndSim(entryA, entryB, g, t, 2)
-    print("dsim= "+str(dSim))
+    #print("dsim= "+str(dSim))
     if l<=(m/2):
         lSim = getIndSim(entryA, entryB, g, t, 1)
-        print("lSim= "+str(lSim))
+     #   print("lSim= "+str(lSim))
     else: 
         lSim = getExSim(entryA, entryB, g, t, 1)
     if e<=(m/2): 
         eSim = getIndSim(entryA, entryB, g, t, 0)
-        print("eSim= "+str(eSim))
     else: 
         eSim = getExSim(entryA, entryB, g, t, 0)
-    
-    simScore = 0.999*((e/(e+d+l))*eSim+(l/(e+d+l))*lSim+(d/(e+d+l))*dSim)
+    print(entryB["id"]+" eSim= "+str(eSim)+" dsim= "+str(dSim)+" lsim= "+str(lSim))
 
+    totalSum=e+d+l
+
+    simScore=0
+
+    if e>0:
+        simScore = simScore+(e/totalSum*eSim)
+    if l>0:
+        simScore = simScore+(l/totalSum*lSim)
+    if d>0:
+        simScore = simScore+(d/totalSum*dSim)
+
+    simScore = 0.999*simScore
+    
     return simScore
 
 
@@ -832,7 +844,7 @@ getSimilarityScore: Berechnet den SimilarityScore
 
                 entry:      {
                                 "id" : idOfTheEntry,
-                                "wkt_geometry" : [minLat,maxLat,minLon,maxLon],
+                                "wkt_geometry" : [minLon, minLat, maxLon, maxLat],
                                 "vector" : [[x,y],[x,y]...],
                                 "time" : [start, end],
                                 "raster"  : bool
@@ -853,23 +865,24 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     if checkValidity(entries, cmp, n, e, d, l, g, t, m) is False:
         return False
 
-    if n>len(entries):
-        n=len(entries)
+    if n>len(entries)-1:
+        n=len(entries)-1
 
     records = []
 
     i=0
 
     # First n entries are added to the priorityqueue
-    while i < n:
-        heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
+    while i <= n:
+        if not (entries[i]["id"]==cmp["id"]):
+            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
         i=i+1
     
     # Rest of entries are checked for better simscores
     while i < len(entries):
         min = heapq.heappop(records)
         currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)
-        if min[1]<currscore:
+        if min[1]<currscore and not (entries[i]["id"]==cmp["id"]):
             heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
         else:
             heapq.heappush(records, min)
@@ -884,34 +897,39 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
 
 
 entry1 ={
-        "id" : 'idOfTheEntry',
-        "wkt_geometry" : [1,1,1,1],
-        "vector" : [[1,1],[2,2],[3,3],[4,4]],
-        "time" : [None, None],
-        "raster"  : False
-    }
+        "id": 'urn:uuid: 1', 
+        "wkt_geometry": [10,12, 12,10], 
+        'time': None, 
+        'vector': [[10,12],[12,10]], 
+        'raster': None}
 
 entry2 ={
-        "id" : 'idOfTheEntry',
-        "wkt_geometry" : [1,1,1,1],
-        "vector" : [[1,1],[2,2],[3,3],[4,4]],
-        "time" : [None, None],
-        "raster"  : False
-    }
+        'id': 'urn:uuid:2', 
+        'wkt_geometry': [13.75, 60.04, 17.92, 68.41], 
+        'time': None, 
+        'vector': [[12,12],[45,67]], 
+        'raster': None}
 
-entry4 ={
-        "id" : 'idOfTheEntry',
-        "wkt_geometry" : [1,1,1,1],
-        "vector" : [[11,11],[12,12],[13,13],[14,14]],
-        "time" : [None, None],
-        "raster"  : False
-    }    
 entry3 ={
-        "id" : 'idOfTheEntry',
-        "wkt_geometry" : [2,2,2,2],
-        "vector" : [[2,2]],
-        "time" : [None, None],
-        "raster"  : False
+        'id': 'urn:uuid:3', 
+        'wkt_geometry': None, 
+        'time': None, 
+        'vector': None, 
+        'raster': None
+    }
+entry4 ={
+        'id': 'urn:uuid:4', 
+        'wkt_geometry': [13.75, 60.04, 17.92, 68.41], 
+        'time': None, 
+        'vector': [[12,12],[45,67]], 
+        'raster': None
     }
 
-print(getSimilarRecords([entry2, entry3, entry4], entry1, 3, 2, 2, 2, 2, 0, 5))
+entry5 ={
+        'id': 'urn:uuid:5', 
+        'wkt_geometry': [13.75, 60.04, 17.92, 68.41], 
+        'time': ['2007-06-11T02: 28: 00Z', '2007-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+print(getSimilarRecords([entry1, entry2, entry3, entry4], entry1, 4, 0, 0, 1, 0, 0, 5))
