@@ -711,8 +711,6 @@ class Csw(object):
         
         if isinstance(self.contenttype, bytes):
             self.contenttype = self.contenttype.decode()
-        LOGGER.debug(xmldecl)
-        LOGGER.debug(appinfo)
         LOGGER.debug(response)
         #response = '{"csw30:SummaryRecord": {"dc:identifier123": "urn:uuid:a06af396-3105-442d-8b40-22b57a90d2f2","dc:title": "Lorem ipsum dolor sit amet hallo hallo","dc:type": "http://purl.org/dc/dcmitype/Image","dc:format": "image/jpeg", "hallo": {"hallo": "hallo"}}}'
         s = (u'%s%s%s' % (xmldecl, appinfo, response)).encode(self.encoding)

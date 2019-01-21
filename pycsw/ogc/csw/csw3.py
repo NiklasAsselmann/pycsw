@@ -1410,6 +1410,8 @@ class Csw3(object):
         records_array = []
         for record in all_records: 
             record_dict = {}
+
+
             def computeBbox(wkt_geometry):
                 '''get bouding box of given wkt_geometry (poylgon)'''
                 wkt_geometry = str(wkt_geometry)
@@ -1436,6 +1438,7 @@ class Csw3(object):
             except:
                 record_dict['vector'] = None
             record_dict['raster'] = None
+            
             records_array.append(record_dict)
         LOGGER.debug(records_array)
         LOGGER.debug(len(records_array))
@@ -1446,7 +1449,7 @@ class Csw3(object):
         for record in records_array:
             if record['id'] == identifier:
                 compared_record = record
-        LOGGER.debug(compared_record)
+                LOGGER.debug(compared_record)
         if 'compared_record' in locals():
             try:
                 # call similarity function from parameters
@@ -1481,8 +1484,17 @@ class Csw3(object):
                 raise Exception('Invalid parameters for similarity function.')
 
         else:
-            raise Exception('The related dataset could not be found.')
-  
+            return self.exceptionreport('RelatedDatasetNotFound', 'id',
+                'The related dataset could not be found')
+        
+        #simscores = [["abcs123", 123],["abcs123", 0.5],["def435", 0.3],["hij546", 0.45], ["klm83596754", 0.9],["def435", 0.3],["hij546", 0.45]]
+        for elem in simscores:
+            simRecords = etree.SubElement(node, "similar_records")
+            identifier = etree.SubElement(simRecords, "identifier")
+            identifier.text = elem[0]
+            simScore = etree.SubElement(simRecords, "similarity_score")
+            simScore.text = str(elem[1])
+            
 
     def getrepositoryitem(self):
         ''' Handle GetRepositoryItem request '''
