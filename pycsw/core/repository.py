@@ -204,11 +204,11 @@ class Repository(object):
         ''' Query by list of identifiers '''
 
         column = getattr(self.dataset, \
-        self.context.md_core_model['mappings']['pycsw:Identifier123'])
+        self.context.md_core_model['mappings']['pycsw:Identifier'])
         LOGGER.debug("self.context")
         LOGGER.debug(self.context)
-        LOGGER.debug("self.context.md_core_model['mappings']['pycsw:Identifier123'])")
-        LOGGER.debug(self.context.md_core_model['mappings']['pycsw:Identifier123'])
+        LOGGER.debug("self.context.md_core_model['mappings']['pycsw:Identifier'])")
+        LOGGER.debug(self.context.md_core_model['mappings']['pycsw:Identifier'])
         query = self.session.query(self.dataset).filter(column.in_(ids))
         return self._get_repo_filter(query).all()
 
@@ -293,6 +293,50 @@ class Repository(object):
         # always apply limit and offset
         return [str(total), self._get_repo_filter(query).limit(
         maxrecords).offset(startposition).all()]
+
+    def queryWithoutLimit(self, constraint, sortby=None, typenames=None, 
+        startposition=0):
+        ''' Query records from underlying repository '''
+
+        # run the raw query and get total
+        if 'where' in constraint:  # GetRecords with constraint
+            LOGGER.debug('constraint detected')
+            query = self.session.query(self.dataset).filter(
+            text(constraint['where'])).params(self._create_values(constraint['values']))
+        else:  # GetRecords sans constraint
+            LOGGER.debug('No constraint detected')
+            query = self.session.query(self.dataset)
+
+        total = self._get_repo_filter(query).count()
+
+        if util.ranking_pass:  #apply spatial ranking
+            #TODO: Check here for dbtype so to extract wkt from postgis native to wkt
+            LOGGER.debug('spatial ranking detected')
+            LOGGER.debug('Target WKT: %s', getattr(self.dataset, self.context.md_core_model['mappings']['pycsw:BoundingBox']))
+            LOGGER.debug('Query WKT: %s', util.ranking_query_geometry)
+            query = query.order_by(func.get_spatial_overlay_rank(getattr(self.dataset, self.context.md_core_model['mappings']['pycsw:BoundingBox']), util.ranking_query_geometry).desc())
+            #trying to make this wsgi safe
+            util.ranking_pass = False
+            util.ranking_query_geometry = ''
+
+        if sortby is not None:  # apply sorting
+            LOGGER.debug('sorting detected')
+            #TODO: Check here for dbtype so to extract wkt from postgis native to wkt
+            sortby_column = getattr(self.dataset, sortby['propertyname'])
+
+            if sortby['order'] == 'DESC':  # descending sort
+                if 'spatial' in sortby and sortby['spatial']:  # spatial sort
+                    query = query.order_by(func.get_geometry_area(sortby_column).desc())
+                else:  # aspatial sort
+                    query = query.order_by(sortby_column.desc())
+            else:  # ascending sort
+                if 'spatial' in sortby and sortby['spatial']:  # spatial sort
+                    query = query.order_by(func.get_geometry_area(sortby_column))
+                else:  # aspatial sort
+                    query = query.order_by(sortby_column)
+
+        # always apply limit and offset
+        return [str(total), self._get_repo_filter(query).offset(startposition).all()]
 
     def insert(self, record, source, insert_date):
         ''' Insert a record into the repository '''

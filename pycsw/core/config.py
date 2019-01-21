@@ -101,7 +101,7 @@ class StaticContext(object):
             'typename': 'pycsw:CoreMetadata',
             'outputschema': 'http://pycsw.org/metadata',
             'mappings': {
-                'pycsw:Identifier123': 'identifier',
+                'pycsw:Identifier': 'identifier',
                 # CSW typename (e.g. csw:Record, md:MD_Metadata)
                 'pycsw:Typename': 'typename',
                 # schema namespace, i.e. http://www.isotc211.org/2005/gmd
@@ -121,6 +121,8 @@ class StaticContext(object):
                 'pycsw:KeywordType': 'keywordstype',
                 'pycsw:Format': 'format',
                 'pycsw:Vector_rep': 'vector_rep',
+                'pycsw:Time_begin': 'time_begin',
+                'pycsw:Time_end': 'time_end',
                 'pycsw:Source': 'source',
                 'pycsw:Date': 'date',
                 'pycsw:Modified': 'date_modified',
@@ -330,8 +332,12 @@ class StaticContext(object):
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Format']},
                                 'dc:vector_rep':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Vector_rep']},
-                                'dc:identifier123':
-                                {'dbcol': self.md_core_model['mappings']['pycsw:Identifier123']},
+                                'dc:time_begin':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Time_begin']},
+                                'dc:time_end':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Time_end']},
+                                'dc:identifier':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Identifier']},
                                 'dc:source':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Source']},
                                 'dc:language':
@@ -570,8 +576,12 @@ class StaticContext(object):
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Format']},
                                 'dc:vector_rep':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Vector_rep']},
-                                'dc:identifier123':
-                                {'dbcol': self.md_core_model['mappings']['pycsw:Identifier123']},
+                                'dc:time_begin':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Time_begin']},
+                                'dc:time_end':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Time_end']},
+                                'dc:identifier':
+                                {'dbcol': self.md_core_model['mappings']['pycsw:Identifier']},
                                 'dc:source':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:Source']},
                                 'dc:language':
@@ -632,7 +642,9 @@ class StaticContext(object):
             'dc:type': 'pycsw:Type',
             'dc:format': 'pycsw:Format',
             'dc:vector_rep': 'pycsw:Vector_rep',
-            'dc:identifier123': 'pycsw:Identifier123',
+            'dc:time_begin': 'pycsw:Time_begin',
+            'dc:time_end': 'pycsw:Time_end',
+            'dc:identifier': 'pycsw:Identifier',
             'dc:source': 'pycsw:Source',
             'dc:language': 'pycsw:Language',
             'dc:relation': 'pycsw:Relation',
