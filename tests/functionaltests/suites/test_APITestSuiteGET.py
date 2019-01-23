@@ -15,25 +15,34 @@ response = requests.get(BASE_URL + "service=CSW&version=3.0.0&request=GetSimilar
 #print (response)
 #print (response.json())
 print (json.dumps(response.json(), indent=4))
-
-resp = response.json()
+if response.status_code == 200:
+    print(response)
+    print(response.json())
+    print (json.dumps(response.json(), indent=4))
+else:
+    print(response)
+#resp = response.json()
 
 '''
 GET-Request: elementsetname=brief
 Request: valid JSON/XML
-Response: 200
+Response: 500
 
 '''
 BASE_URL = "http://localhost:8000/?"
 params = {"page": 2}
 #print (BASE_URL)
-response = requests.get(BASE_URL + "http://localhost:8000/?service=CSW&version=3.0.0&request=GetSimilarRecords&id=urn:uuid:9a669547-b69b-469f-a11f-2d875366bbdc&elementsetname=brief&maxrecords=4&datatype_weight=4&location_weight=4&geographic_weight=4&applicationformat=application/xml",params=params)
+response = requests.get(BASE_URL + "service=CSW&version=3.0.0&request=GetSimilarRecords&id=urn:uuid:9a669547-b69b-469f-a11f-2d875366bbdc&elementsetname=brief&maxrecords=4&datatype_weight=4&location_weight=4&geographic_weight=4&applicationformat=application/xml",params=params)
+print(response.url)
 
-#print (response)
-#print (response.json())
-print (json.dumps(response.json(), indent=4))
+if response.status_code == 200:
+    print(response)
+    print(response.json())
+    print (json.dumps(response.json(), indent=4))
+else:
+    print(response)
 
-resp = response.json()
+
 
 '''
 GET-Request: datatype_weight=1, location_weight=2,geographic_weight=3
