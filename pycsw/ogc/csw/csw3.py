@@ -1183,8 +1183,6 @@ class Csw3(object):
 
     def getsimilarrecords(self, raw=False):
         ''' Handle GetSimilarRecords request '''
-        self.parent.kvp['outputformat'] = 'application/json'
-
         
         if 'id' not in self.parent.kvp:
             return self.exceptionreport('MissingParameterValue', 'id',
