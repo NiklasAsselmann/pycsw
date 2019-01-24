@@ -1198,6 +1198,7 @@ class Csw3(object):
          the default values for these, the maximal value for a weight and the limit for 'similarRecords' are set in the preferences.cfg-file 
         '''
         
+
         
         if 'id' not in self.parent.kvp:
             return self.exceptionreport('MissingParameterValue', 'id',
