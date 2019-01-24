@@ -2,6 +2,8 @@ import math
 import heapq
 import datetime
 import dateutil.parser
+from shapely.geometry import Polygon, mapping, shape
+from pyproj import Proj
 
 
 
@@ -29,14 +31,14 @@ Help functions:
 Checks whether entries are valid
 input:
     entries:    list of dicts, each dict containing an entry (see bottom for more info)
-    cmp:        single entry as dict
+    ent:        single entry as dict
     n:          number of similar records to be shown
-    e:          weight of extent similarity 
-    d:          weight of datatype similarity
-    l:          weight of location similarity
-    g:          weight of spatial similarity
-    t:          weight of temporal similarity
-    m:          max value for weights
+    ext:          weight of extent similarity 
+    dat:          weight of datatype similarity
+    loc:          weight of location similarity
+    geo:          weight of spatial similarity
+    tim:          weight of temporal similarity
+    mxm:          max value for weights
 
 output:
     true:       if entries and cmp are all valid entries, n is a natural number, e,d,l,g,t are all 
@@ -44,20 +46,18 @@ output:
     false:      else
     
 '''
-def checkValidity(entries, cmp, n, e, d, l, g, t, m):
+def checkValidity(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
     #entries will be checked during iteration in main function
-    #cmp
-    if cmp is None or cmp["id"] is None:
+    #ent
+    if ent is None or ent["id"] is None:
         return False
 
     #n will be checked inside main function
 
-    #e,d,g,l,t,m
+    #parameters
 
-    if m<0 or e<0 or e>m or d<0 or d>m or l<0 or l>m or g<0 or g>m or t<0 or t>m or (g==0 and t==0):
+    if mxm<0 or ext<0 or ext>mxm or dat<0 or dat>mxm or loc<0 or loc>mxm or geo<0 or geo>mxm or tim<0 or tim>mxm or (geo==0 and tim==0):
         return False
-
-
     return True
 
 
@@ -74,7 +74,7 @@ def checkBboxInput(entry):
     return True
 
 def checkVectorInput(entry):
-    if entry["vector"] is None or len(entry["vector"])==0:
+    if entry["vector"] is None or len(entry["vector"])<=2:
         return False
     return True
 
@@ -173,6 +173,20 @@ def getCenter(entry):
     return center
 
 
+'''
+
+'''
+def getPolygCenter(entry):
+    lon, lat = zip(*entry['vector'])
+    
+    pa = Proj("+proj=aea +lat_1=37.0 +lat_2=41.0 +lat_0=39.0 +lon_0=-106.55")
+    #equal area projection centered on and bracketing the area of interest
+    x, y = pa(lon, lat)
+    pol = {"type": "Polygon", "coordinates": [zip(x, y)]}
+    return centroid(pol).coords
+
+
+
 '''Calculate  - inner function
 input:
     coordinates : list of coordinates
@@ -205,6 +219,20 @@ def getAr(points):
     if (points[0]==points[1]) or (points[2]==points[3]):
         return 0
     return getArea(points)
+
+
+
+'''
+Polygon Area in m²
+'''
+def getPolAr(entry):
+    lon, lat = zip(*entry['vector'])
+    
+    pa = Proj("+proj=aea +lat_1=37.0 +lat_2=41.0 +lat_0=39.0 +lon_0=-106.55")
+    #equal area projection centered on and bracketing the area of interest
+    x, y = pa(lon, lat)
+    pol = {"type": "Polygon", "coordinates": [zip(x, y)]}
+    return shape(pol).area 
 
 
 
@@ -278,10 +306,10 @@ output:
 TODO: implement more specific calc
 '''
 def getGeoExtSimE(entryA, entryB):
-    diagonalA=float(getDiagonal(entryA))
-    diagonalB=float(getDiagonal(entryB))
-    minV = min(diagonalA, diagonalB)
-    maxV = max(diagonalA, diagonalB)
+    areaA=getPolAr(entryA)
+    areaB=getPolAr(entryB)
+    minV = min(areaA, areaB)
+    maxV = max(areaA, areaB)
     if maxV == 0:
         return 1
     sim = float(minV/maxV)
@@ -345,7 +373,7 @@ def getCenterGeoSim(entryA, entryB):
     centerB = getCenter(entryB)
     diagonal = gDiag(centerA[1], centerB[1], centerA[0], centerB[0])
     circumf = 20038000
-    print("diagonal: "+str(diagonal))
+    #printprint("diagonal: "+str(diagonal))
     sim = 1-(diagonal/circumf)
     return sim
 
@@ -701,7 +729,7 @@ input:
 output: 
     similarityscore (in[0,1])        
 '''
-def getIndSim(entryA, entryB, g, t, c):
+def getIndSim(entryA, entryB, geo, tim, cri):
     tempA = checkTempInput(entryA)
     tempB = checkTempInput(entryB)
     bboxA = checkBboxInput(entryA)
@@ -713,13 +741,13 @@ def getIndSim(entryA, entryB, g, t, c):
     tempSim = 0
 
 # Extent
-    if c==0:
+    if cri==0:
         if bboxA and bboxB:
             geoSim = getGeoExtSim(entryA,entryB)
         if tempA and tempB:
             tempSim = getTempExtSim(entryA,entryB)
 # Location    
-    if c==1:
+    if cri==1:
         geoInter = 0
         tempInter = 0
         geoLoc = 0
@@ -731,17 +759,17 @@ def getIndSim(entryA, entryB, g, t, c):
         if tempA and tempB:
             tempInter = getInterTempSim(entryA,entryB)
             tempLoc = getCenterTempSim(entryA,entryB)
-        print("geoInter :"+str(geoInter)+" geoLoc: "+str(geoLoc))
+        #print("geoInter :"+str(geoInter)+" geoLoc: "+str(geoLoc))
         geoSim = 0.4*geoInter + 0.6*geoLoc
         tempSim = 0.4*tempInter + 0.6*tempLoc
 # Datatype
-    if c==2:
+    if cri==2:
         if vectorA and vectorB:
             geoSim = getGeoDatSim(entryA,entryB)
         if tempA and tempB:
             tempSim = getTempDatSim(entryA,entryB)
 
-    rel = g/(g+t)
+    rel = geo/(geo+tim)
     sim = rel*geoSim + (1-rel)*tempSim
 
     return sim 
@@ -751,15 +779,15 @@ def getIndSim(entryA, entryB, g, t, c):
 combines Geo and Temp Similarites for selected criterium c while taking into consideration weights for geographic and temporal similarity
 input:
     entryA,entryB : records from repository which are to be compared
-    c : criterium 
+    cri : criterium 
         c=0 for Similarity of extent
         c=1 for Similarity of location
-    g : weight of geographic similarity
-    t : weight of temporal similarity
+    geo : weight of geographic similarity
+    tim : weight of temporal similarity
 output: 
     similarityscore (in[0,1])        
 '''
-def getExSim(entryA, entryB, g, t, c):
+def getExSim(entryA, entryB, geo, tim, cri):
     tempA = checkTempInput(entryA)
     tempB = checkTempInput(entryB)
     bboxA = checkBboxInput(entryA)
@@ -771,7 +799,7 @@ def getExSim(entryA, entryB, g, t, c):
     tempSim = 0
 
 # Extent
-    if c==0:
+    if cri==0:
         if vectorB and vectorA:
             geoSim = getGeoExtSimE(entryA,entryB)
         elif bboxA and bboxB:
@@ -779,7 +807,7 @@ def getExSim(entryA, entryB, g, t, c):
         if tempA and tempB:
             tempSim = getTempExtSim(entryA,entryB)
 # Location    
-    if c==1:
+    if cri==1:
         geoInter = 0
         tempInter = 0
         geoLoc = 0
@@ -798,7 +826,7 @@ def getExSim(entryA, entryB, g, t, c):
         geoSim = 0.4*geoInter + 0.6*geoLoc
         tempSim = 0.4*tempInter + 0.6*tempLoc
 
-    rel = g/(g+t)
+    rel = geo/(geo+tim)
     sim = rel*geoSim + (1-rel)*tempSim
 
     return sim 
@@ -807,31 +835,31 @@ def getExSim(entryA, entryB, g, t, c):
 
 
 
-def getSimScoreTotal(entryA, entryB, g, t, e, d, l, m):
+def getSimScoreTotal(entryA, entryB, geo, tim, ext, dat, loc, mxm, dtl):
 
-    dSim = getIndSim(entryA, entryB, g, t, 2)
+    dSim = getIndSim(entryA, entryB, geo, tim, 2)
     #print("dsim= "+str(dSim))
-    if l<=(m/2):
-        lSim = getIndSim(entryA, entryB, g, t, 1)
+    if dtl is None or not dtl or not checkVectorInput(entryA) or not checkVectorInput(entryB): 
+        lSim = getIndSim(entryA, entryB, geo, tim, 1)
      #   print("lSim= "+str(lSim))
     else: 
-        lSim = getExSim(entryA, entryB, g, t, 1)
-    if e<=(m/2): 
-        eSim = getIndSim(entryA, entryB, g, t, 0)
+        lSim = getExSim(entryA, entryB, geo, tim, 1)
+    if dtl is None or not dtl or not checkVectorInput(entryA) or not checkVectorInput(entryB): 
+        eSim = getIndSim(entryA, entryB, geo, tim, 0)
     else: 
-        eSim = getExSim(entryA, entryB, g, t, 0)
-    print(entryB["id"]+" eSim= "+str(eSim)+" dsim= "+str(dSim)+" lsim= "+str(lSim))
+        eSim = getExSim(entryA, entryB, geo, tim, 0)
+    #print(entryB["id"]+" eSim= "+str(eSim)+" dsim= "+str(dSim)+" lsim= "+str(lSim))
 
-    totalSum=e+d+l
+    totalSum=ext+dat+loc
 
     simScore=0
 
-    if e>0:
-        simScore = simScore+(e/totalSum*eSim)
-    if l>0:
-        simScore = simScore+(l/totalSum*lSim)
-    if d>0:
-        simScore = simScore+(d/totalSum*dSim)
+    if ext>0:
+        simScore = simScore+(ext/totalSum*eSim)
+    if loc>0:
+        simScore = simScore+(loc/totalSum*lSim)
+    if dat>0:
+        simScore = simScore+(dat/totalSum*dSim)
 
     simScore = 0.999*simScore
     
@@ -845,24 +873,25 @@ getSimilarityScore: Berechnet den SimilarityScore
                 entry:      {
                                 "id" : idOfTheEntry,
                                 "wkt_geometry" : [minLon, minLat, maxLon, maxLat],
-                                "vector" : [[x,y],[x,y]...],
+                                "vector" : [[lat,long],[lat,long]...],
                                 "time" : [start, end],
                                 "raster"  : bool
                             }   
 
-        cmp is an entry and therefor the same format
+        ent is an entry and therefor the same format
         n : number of similar records to be retrieved
-        t : weight temporal similarity
-        g : weight geographic similarity
-        d : weight of datatype similarity 
-        e : weight of extent similarity 
-        l : weight of location similarity
-        m : max value for weights
+        tim : weight temporal similarity
+        geo : weight geographic similarity
+        dat : weight of datatype similarity 
+        ext : weight of extent similarity 
+        loc : weight of location similarity
+        max : max value for weights
+        dtl : boolean, true if detailed
 '''
 
-def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
+def getSimilarRecords(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
     
-    if checkValidity(entries, cmp, n, e, d, l, g, t, m) is False:
+    if checkValidity(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl) is False:
         return False
 
     if n>len(entries)-1:
@@ -873,19 +902,22 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     i=0
 
     # First n entries are added to the priorityqueue
-    while i <= n:
-        if not (entries[i]["id"]==cmp["id"]):
-            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
+    while i < n:
+        if not (entries[i]["id"]==ent["id"]):
+            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)])
+            print("1 "+str(i))
         i=i+1
     
     # Rest of entries are checked for better simscores
     while i < len(entries):
         min = heapq.heappop(records)
-        currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)
-        if min[1]<currscore and not (entries[i]["id"]==cmp["id"]):
-            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
+        currscore = getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)
+        if min[1]<currscore and not (entries[i]["id"]==ent["id"]):
+            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)])
+            print("2 "+str(i))
         else:
             heapq.heappush(records, min)
+            print("3 "+str(i))
         i=i+1
     
     output=sorted(records, key= lambda x: x[1], reverse=True)
@@ -900,14 +932,14 @@ entry1 ={
         "id": 'urn:uuid: 1', 
         "wkt_geometry": [10,12, 12,10], 
         'time': None, 
-        'vector': [[10,12],[12,10]], 
+        'vector': [[10,12],[12,10],[90,10]], 
         'raster': None}
 
 entry2 ={
         'id': 'urn:uuid:2', 
         'wkt_geometry': [13.75, 60.04, 17.92, 68.41], 
         'time': None, 
-        'vector': [[12,12],[45,67]], 
+        'vector': [[12,12],[45,67],[37,10]], 
         'raster': None}
 
 entry3 ={
@@ -921,7 +953,7 @@ entry4 ={
         'id': 'urn:uuid:4', 
         'wkt_geometry': [13.75, 60.04, 17.92, 68.41], 
         'time': None, 
-        'vector': [[12,12],[45,67]], 
+        'vector': [[12,12],[45,67],[38,11]], 
         'raster': None
     }
 
@@ -932,4 +964,83 @@ entry5 ={
         'vector': None, 'raster': None
     }
 
-print(getSimilarRecords([entry1, entry2, entry3, entry4], entry1, 4, 0, 0, 1, 0, 0, 5))
+
+entry6 ={
+        'id': 'urn:uuid:6', 
+        'wkt_geometry': [13.75, 60.04, 17.92, 68.41], 
+        'time': ['2007-06-11T02: 28: 00Z', '2007-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+
+entry7 ={
+        'id': 'urn:uuid:7', 
+        'wkt_geometry': [16.75, 60.04, 17.92, 68.41], 
+        'time': ['2008-06-11T02: 28: 00Z', '2008-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+
+entry8 ={
+        'id': 'urn:uuid:8', 
+        'wkt_geometry': [13.75, 60.04, 18.92, 68.41], 
+        'time': ['2007-06-11T02: 28: 00Z', '2017-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+entry9 ={
+        'id': 'urn:uuid:9', 
+        'wkt_geometry': [11.75, 60.04, 17.92, 68.41], 
+        'time': ['2007-06-11T02: 28: 00Z', '2007-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+entry10 ={
+        'id': 'urn:uuid:10', 
+        'wkt_geometry': [13.51, 60.04, 17.92, 68.41], 
+        'time': ['2007-06-10T02: 28: 00Z', '2007-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+entry11 ={
+        'id': 'urn:uuid:11', 
+        'wkt_geometry': [13.95, 60.04, 17.92, 68.41], 
+        'time': ['2007-06-11T02: 28: 00Z', '2007-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+entry12 ={
+        'id': 'urn:uuid:12', 
+        'wkt_geometry': [13.75, 61.04, 17.92, 68.41], 
+        'time': ['2007-06-11T02: 28: 00Z', '2008-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+entry13 ={
+        'id': 'urn:uuid:13', 
+        'wkt_geometry': [13.75, 60.04, 17.92, 69.41], 
+        'time': ['2007-06-11T02: 28: 00Z', '2027-08-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+entry14 ={
+        'id': 'urn:uuid:14', 
+        'wkt_geometry': [13.75, 60.04, 17.92, 78.41], 
+        'time': ['2007-06-11T02: 28: 00Z', '2017-12-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+entry15 ={
+        'id': 'urn:uuid:15', 
+        'wkt_geometry': [13.75, 60.04, 17.92, 68.43], 
+        'time': ['2007-06-11T02: 28: 00Z', '2007-09-11T02: 28: 00Z'], 
+        'vector': None, 'raster': None
+    }
+
+
+entriesTest =[{'id': 'urn:uuid:19887a8a-f6b0-4a63-ae56-7fba0e17801f', 'wkt_geometry': None, 'time': None, 'vector': None, 'raster': None}, {'id': 'urn:uuid:1ef30a8b-876d-4828-9246-c37ab4510bbd', 'wkt_geometry': ['13.75', '60.04', '17.92', '68.41'], 'time': None, 'vector': [[12, 12], [45, 67]], 'raster': None}, {'id': 'urn:uuid:66ae76b7-54ba-489b-a582-0f0633d96493', 'wkt_geometry': None, 'time': None, 'vector': None, 'raster': None}, {'id': 'urn:uuid:6a3de50b-fa66-4b58-a0e6-ca146fdd18d4', 'wkt_geometry': ['13.75', '60.04', '17.92', '68.41'], 'time': None, 'vector': [[12, 12], [45, 67]], 'raster': None}, {'id': 'urn:uuid:784e2afd-a9fd-44a6-9a92-a3848371c8ec', 'wkt_geometry': ['13.75', '60.04', '17.92', '68.41'], 'time': ['2007-06-11T02:28:00Z', '2007-08-11T02:28:00Z'], 'vector': None, 'raster': None}, {'id': 'urn:uuid:829babb0-b2f1-49e1-8cd5-7b489fe71a1e', 'wkt_geometry': None, 'time': None, 'vector': [[12, 12], [45, 67]], 'raster': None}, {'id': 'urn:uuid:88247b56-4cbc-4df9-9860-db3f8042e357', 'wkt_geometry': None, 'time': ['2007-06-11T02:28:00Z', '2008-06-11T02:28:00Z'], 'vector': None, 'raster': None}, {'id': 'urn:uuid:94bc9c83-97f6-4b40-9eb8-a8e8787a5c63', 'wkt_geometry': ['-4.10', '47.59', '0.89', '51.22'], 'time': ['2007-06-11T02:28:00Z', '2007-08-11T02:28:00Z'], 'vector': [[12, 12], [45, 67]], 'raster': None}, {'id': 'urn:uuid:9a669547-b69b-469f-a11f-2d875366bbdc', 'wkt_geometry': ['-6.17', '44.79', '-2.23', '51.13'], 'time': ['2007-06-11T02:28:00Z', '2007-08-11T02:28:00Z'], 'vector': [[12, 12], [45, 67]], 'raster': None}, {'id': 'urn:uuid:a06af396-3105-442d-8b40-22b57a90d2f2', 'wkt_geometry': None, 'time': None, 'vector': [[12, 12], [45, 67]], 'raster': None}, {'id': 'urn:uuid:ab42a8c4-95e8-4630-bf79-33e59241605a', 'wkt_geometry': None, 'time': None, 'vector': [[12, 12], [45, 67]], 'raster': None}, {'id': 'urn:uuid:e9330592-0932-474b-be34-c3a3bb67c7db', 'wkt_geometry': None, 'time': None, 'vector': [[12, 12], [45, 67]], 'raster': None}, {'id': 'urn:uuid:88247b56-4cbc-4df9-9860-db3f8042e376', 'wkt_geometry': None, 'time': ['2007-06-11T02:28:00Z', '2008-06-11T02:28:00Z'], 'vector': None, 'raster': None}]
+entryCmp ={'id': 'urn:uuid:9a669547-b69b-469f-a11f-2d875366bbdc', 'wkt_geometry': ['-6.17', '44.79', '-2.23', '51.13'], 'time': ['2007-06-11T02:28:00Z', '2007-08-11T02:28:00Z'], 'vector': [[12, 12], [45, 67]], 'raster': None}
+
+#print(getSimilarRecords([entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12, entry13, entry14, entry15], entry1, 9, 1, 1, 1, 1, 1, 5))
+#print(getSimilarRecords(entriesTest, entryCmp, 9,1,1,1,1,1,5,False))
+print(getPolygCenter(entry4))
