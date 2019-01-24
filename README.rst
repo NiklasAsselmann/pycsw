@@ -64,7 +64,7 @@ Similar records can be displayed by the 'getSimilarRecords'-request that react t
 - geographic_weight (1)         how relevant shall the geographic factor be in the similarity calculation
 - extent_weight (1)             how relevant shall the extent factor be in the similarity calculation
 
-(1) the range of the weights can be definded in the [preferences.cfg-file](https://github.com/KathHv/pycsw/blob/master/preferences.cfg) file as well through the 'max_value_for_weight' variable (right boundry).
+.(1) the range of the weights can be definded in the [preferences.cfg-file](https://github.com/KathHv/pycsw/blob/master/preferences.cfg) file as well through the 'max_value_for_weight' variable (right boundry).
     the default weight for each weight can be set in this file as well  
 
-(2) the limit for this parameter can be set in the [preferences.cfg-file](https://github.com/KathHv/pycsw/blob/master/preferences.cfg) through the parameter 'limit_for_similarrecords'.
+.(2) the limit for this parameter can be set in the [preferences.cfg-file](https://github.com/KathHv/pycsw/blob/master/preferences.cfg) through the parameter 'limit_for_similarrecords'.
