@@ -176,14 +176,16 @@ def getCenter(entry):
 '''
 
 '''
-def getPolygCenter(entry):
-    lon, lat = zip(*entry['vector'])
+def getPolygCenter(coord):
+    #lon, lat = zip(*entry['vector'])
     
-    pa = Proj("+proj=aea +lat_1=37.0 +lat_2=41.0 +lat_0=39.0 +lon_0=-106.55")
+    #pa = Proj("+proj=aea +lat_1=37.0 +lat_2=41.0 +lat_0=39.0 +lon_0=-106.55")
     #equal area projection centered on and bracketing the area of interest
-    x, y = pa(lon, lat)
-    pol = {"type": "Polygon", "coordinates": [zip(x, y)]}
-    return centroid(pol).coords
+    #x, y = pa(lon, lat)
+    #pol = {"type": "Polygon", "coordinates": [zip(x, y)]}
+    pol=Polygon(coord)
+    return list(pol.centroid.coords)
+
 
 
 
@@ -233,6 +235,34 @@ def getPolAr(entry):
     x, y = pa(lon, lat)
     pol = {"type": "Polygon", "coordinates": [zip(x, y)]}
     return shape(pol).area 
+
+
+
+def uniformPolygonArea(entry):
+    norm = 1000
+    eArea = getPolAr(entry)
+    fac = math.sqrt(norm/eArea)
+    coords = map(lambda x: fac*x, entry["vector"])
+    return coords
+
+
+
+
+def moveCoordinates(coordsA, coordsB):
+    ctrA=getPolygCenter(coordsA)
+    ctrB=getPolygCenter(coordsB)
+    diffX=ctrA[0][0]-ctrB[0][0]
+    diffY=ctrA[0][1]-ctrB[0][1]
+    for x in coordsB:
+        coordsB[x][0]=coordsB[x][0]+diffX
+        coordsB[x][1]=coordsB[x][1]+diffY
+    return[coordsA,coordsB]
+
+
+def getAlignedPolygons(entryA,entryB):
+    return (moveCoordinates(uniformPolygonArea(entryA),uniformPolygonArea(entryB)))
+
+
 
 
 
@@ -357,6 +387,21 @@ Location Similarity
 '''
 
 #####################################################################
+####### Shape comparison ############################################
+#####################################################################
+
+def compShape(entryA, entryB):
+    polygs = getAlignedPolygons(entryA,entryB)
+    polygonA = Polygon(polygs[0])
+    polygonB = Polygon(polygs[1])
+    intersec = polygonA.intersection(polygonB)
+    sim = intersec/(polygonA.area+(polygonB.area-intersec)
+    print(sim)
+    return sim 
+
+
+
+#####################################################################
 ####### Relation of absolute positions in coordinate systems ########
 #####################################################################
 
@@ -368,6 +413,7 @@ output:
     similarityscore (in [0,1])
 
 '''
+
 def getCenterGeoSim(entryA, entryB):
     centerA = getCenter(entryA)
     centerB = getCenter(entryB)
@@ -1043,4 +1089,6 @@ entryCmp ={'id': 'urn:uuid:9a669547-b69b-469f-a11f-2d875366bbdc', 'wkt_geometry'
 
 #print(getSimilarRecords([entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12, entry13, entry14, entry15], entry1, 9, 1, 1, 1, 1, 1, 5))
 #print(getSimilarRecords(entriesTest, entryCmp, 9,1,1,1,1,1,5,False))
-print(getPolygCenter(entry4))
+#pt2=[[12,12],[45,67],[38,11]]
+#print(getPolygCenter([[12,22],[45,77],[38,21]]))
+print(compShape(entry6,entry8))
