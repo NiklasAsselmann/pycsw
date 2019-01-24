@@ -89,44 +89,44 @@ EXAMPLES
 
     1.) setup_db: Creates repository tables and indexes
 
-        pycsw-admin.py -c setup_db -f default.cfg
+        pycsw-admin.py -c setup_db -f preferences.cfg
         
     2.) load_records: Loads metadata records from directory or file into repository
 
-        pycsw-admin.py -c load_records -p /path/to/records -f default.cfg
+        pycsw-admin.py -c load_records -p /path/to/records -f preferences.cfg
 
         Load records from directory recursively
 
-        pycsw-admin.py -c load_records -p /path/to/records -f default.cfg -r
+        pycsw-admin.py -c load_records -p /path/to/records -f preferences.cfg -r
 
         Load records from directory and force updates
 
-        pycsw-admin.py -c load_records -p /path/to/records -f default.cfg -y
+        pycsw-admin.py -c load_records -p /path/to/records -f preferences.cfg -y
 
         Load metadata record from file into repository
 
-        pycsw-admin.py -c load_records -p /path/to/file.xml -f default.cfg
+        pycsw-admin.py -c load_records -p /path/to/file.xml -f preferences.cfg
 
     3.) export_records: Dump metadata records from repository into directory
 
-        pycsw-admin.py -c export_records -p /path/to/records -f default.cfg
+        pycsw-admin.py -c export_records -p /path/to/records -f preferences.cfg
 
     4.) rebuild_db_indexes: Rebuild repository database indexes
 
-        pycsw-admin.py -c rebuild_db_indexes -f default.cfg
+        pycsw-admin.py -c rebuild_db_indexes -f preferences.cfg
 
     5.) optimize_db: Optimize repository database
 
-        pycsw-admin.py -c optimize_db -f default.cfg
+        pycsw-admin.py -c optimize_db -f preferences.cfg
 
     6.) refresh_harvested_records: Refresh repository records
         which have been harvested
 
-        pycsw-admin.py -c refresh_harvested_records -f default.cfg
+        pycsw-admin.py -c refresh_harvested_records -f preferences.cfg
 
     7.) gen_sitemap: Generate XML Sitemap
 
-        pycsw-admin.py -c gen_sitemap -f default.cfg -o /path/to/sitemap.xml
+        pycsw-admin.py -c gen_sitemap -f preferences.cfg -o /path/to/sitemap.xml
 
     8.) post_xml: Execute a CSW request via HTTP POST
 
@@ -142,11 +142,11 @@ EXAMPLES
 
    11.) delete_records: Deletes all records from repository
 
-        pycsw-admin.py -c delete_records -f default.cfg
+        pycsw-admin.py -c delete_records -f preferences.cfg
 
    12.) delete_records: Deletes all records from repository without prompting
 
-        pycsw-admin.py -c delete_records -f default.cfg -y
+        pycsw-admin.py -c delete_records -f preferences.cfg -y
 
 '''
 
