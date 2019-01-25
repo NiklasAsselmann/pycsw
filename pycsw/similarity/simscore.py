@@ -2,6 +2,8 @@ import math
 import heapq
 import datetime
 import dateutil.parser
+from shapely.geometry import Polygon, mapping, shape
+from pyproj import Proj
 
 
 
@@ -29,14 +31,14 @@ Help functions:
 Checks whether entries are valid
 input:
     entries:    list of dicts, each dict containing an entry (see bottom for more info)
-    cmp:        single entry as dict
+    ent:        single entry as dict
     n:          number of similar records to be shown
-    e:          weight of extent similarity 
-    d:          weight of datatype similarity
-    l:          weight of location similarity
-    g:          weight of spatial similarity
-    t:          weight of temporal similarity
-    m:          max value for weights
+    ext:          weight of extent similarity 
+    dat:          weight of datatype similarity
+    loc:          weight of location similarity
+    geo:          weight of spatial similarity
+    tim:          weight of temporal similarity
+    mxm:          max value for weights
 
 output:
     true:       if entries and cmp are all valid entries, n is a natural number, e,d,l,g,t are all 
@@ -44,21 +46,19 @@ output:
     false:      else
     
 '''
-def checkValidity(entries, cmp, n, e, d, l, g, t, m):
+def checkValidity(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
     #entries will be checked during iteration in main function
-    #cmp
-    if cmp is None or cmp["id"] is None:
-        return False
+    #ent
+    if ent is None or ent["id"] is None:
+        raise ValueError('no comparable input')
 
     #n will be checked inside main function
 
-    #e,d,g,l,t,m
+    #parameters
 
-    if m<0 or e<0 or e>m or d<0 or d>m or l<0 or l>m or g<0 or g>m or t<0 or t>m or (g==0 and t==0):
-        return False
-
-
-    return True
+    if mxm<0 or ext<0 or ext>mxm or dat<0 or dat>mxm or loc<0 or loc>mxm or geo<0 or geo>mxm or tim<0 or tim>mxm or (geo==0 and tim==0):
+        raise ValueError('invalid parameters, must be within 0 and mxm, geo and tim cannot both be 0')
+    return 
 
 
 
@@ -74,7 +74,7 @@ def checkBboxInput(entry):
     return True
 
 def checkVectorInput(entry):
-    if entry["vector"] is None or len(entry["vector"])==0:
+    if entry["vector"] is None or len(entry["vector"])<=2:
         return False
     return True
 
@@ -173,6 +173,22 @@ def getCenter(entry):
     return center
 
 
+'''
+
+'''
+def getPolygCenter(coord):
+    #lon, lat = zip(*entry['vector'])
+    
+    #pa = Proj("+proj=aea +lat_1=37.0 +lat_2=41.0 +lat_0=39.0 +lon_0=-106.55")
+    #equal area projection centered on and bracketing the area of interest
+    #x, y = pa(lon, lat)
+    #pol = {"type": "Polygon", "coordinates": [zip(x, y)]}
+    pol=Polygon(coord)
+    return list(pol.centroid.coords)
+
+
+
+
 '''Calculate  - inner function
 input:
     coordinates : list of coordinates
@@ -205,6 +221,52 @@ def getAr(points):
     if (points[0]==points[1]) or (points[2]==points[3]):
         return 0
     return getArea(points)
+
+
+
+'''
+Polygon Area in m²
+'''
+def getPolAr(entry):
+    lon, lat = zip(*entry['vector'])
+    
+    pa = Proj("+proj=aea +lat_1=37.0 +lat_2=41.0 +lat_0=39.0 +lon_0=-106.55")
+    #equal area projection centered on and bracketing the area of interest
+    x, y = pa(lon, lat)
+    pol = {"type": "Polygon", "coordinates": [zip(x, y)]}
+    return shape(pol).area 
+
+
+
+def uniformPolygonArea(entry):
+    norm = 1000
+    eArea = getPolAr(entry)
+    fac = math.sqrt(norm/eArea)
+    coords = entry["vector"]
+    for i in coords:
+        for j in i:
+            j=j*fac
+    #coords = map(lambda x: fac*x, entry["vector"])
+    return coords
+
+
+
+
+def moveCoordinates(coordsA, coordsB):
+    ctrA=getPolygCenter(coordsA)
+    ctrB=getPolygCenter(coordsB)
+    diffX=ctrA[0][0]-ctrB[0][0]
+    diffY=ctrA[0][1]-ctrB[0][1]
+    for x in coordsB:
+        x[0]=x[0]+diffX
+        x[1]=x[1]+diffY
+    return[coordsA,coordsB]
+
+
+def getAlignedPolygons(entryA,entryB):
+    return (moveCoordinates(uniformPolygonArea(entryA),uniformPolygonArea(entryB)))
+
+
 
 
 
@@ -278,10 +340,10 @@ output:
 TODO: implement more specific calc
 '''
 def getGeoExtSimE(entryA, entryB):
-    diagonalA=float(getDiagonal(entryA))
-    diagonalB=float(getDiagonal(entryB))
-    minV = min(diagonalA, diagonalB)
-    maxV = max(diagonalA, diagonalB)
+    areaA=getPolAr(entryA)
+    areaB=getPolAr(entryB)
+    minV = min(areaA, areaB)
+    maxV = max(areaA, areaB)
     if maxV == 0:
         return 1
     sim = float(minV/maxV)
@@ -329,6 +391,19 @@ Location Similarity
 '''
 
 #####################################################################
+####### Shape comparison ############################################
+#####################################################################
+
+def getShapeSim(entryA, entryB):
+    polygs = getAlignedPolygons(entryA,entryB)
+    polygonA = Polygon(polygs[0])
+    polygonB = Polygon(polygs[1])
+    intersec = (polygonA.intersection(polygonB)).area
+    sim = intersec/(polygonA.area+(polygonB.area-intersec))
+    return sim 
+
+
+#####################################################################
 ####### Relation of absolute positions in coordinate systems ########
 #####################################################################
 
@@ -340,12 +415,13 @@ output:
     similarityscore (in [0,1])
 
 '''
+
 def getCenterGeoSim(entryA, entryB):
     centerA = getCenter(entryA)
     centerB = getCenter(entryB)
     diagonal = gDiag(centerA[1], centerB[1], centerA[0], centerB[0])
     circumf = 20038000
-    print("diagonal: "+str(diagonal))
+    #printprint("diagonal: "+str(diagonal))
     sim = 1-(diagonal/circumf)
     return sim
 
@@ -701,7 +777,7 @@ input:
 output: 
     similarityscore (in[0,1])        
 '''
-def getIndSim(entryA, entryB, g, t, c):
+def getIndSim(entryA, entryB, geo, tim, cri):
     tempA = checkTempInput(entryA)
     tempB = checkTempInput(entryB)
     bboxA = checkBboxInput(entryA)
@@ -713,13 +789,13 @@ def getIndSim(entryA, entryB, g, t, c):
     tempSim = 0
 
 # Extent
-    if c==0:
+    if cri==0:
         if bboxA and bboxB:
             geoSim = getGeoExtSim(entryA,entryB)
         if tempA and tempB:
             tempSim = getTempExtSim(entryA,entryB)
 # Location    
-    if c==1:
+    if cri==1:
         geoInter = 0
         tempInter = 0
         geoLoc = 0
@@ -731,17 +807,17 @@ def getIndSim(entryA, entryB, g, t, c):
         if tempA and tempB:
             tempInter = getInterTempSim(entryA,entryB)
             tempLoc = getCenterTempSim(entryA,entryB)
-        print("geoInter :"+str(geoInter)+" geoLoc: "+str(geoLoc))
+        #print("geoInter :"+str(geoInter)+" geoLoc: "+str(geoLoc))
         geoSim = 0.4*geoInter + 0.6*geoLoc
         tempSim = 0.4*tempInter + 0.6*tempLoc
 # Datatype
-    if c==2:
+    if cri==2:
         if vectorA and vectorB:
             geoSim = getGeoDatSim(entryA,entryB)
         if tempA and tempB:
             tempSim = getTempDatSim(entryA,entryB)
 
-    rel = g/(g+t)
+    rel = geo/(geo+tim)
     sim = rel*geoSim + (1-rel)*tempSim
 
     return sim 
@@ -751,15 +827,15 @@ def getIndSim(entryA, entryB, g, t, c):
 combines Geo and Temp Similarites for selected criterium c while taking into consideration weights for geographic and temporal similarity
 input:
     entryA,entryB : records from repository which are to be compared
-    c : criterium 
+    cri : criterium 
         c=0 for Similarity of extent
         c=1 for Similarity of location
-    g : weight of geographic similarity
-    t : weight of temporal similarity
+    geo : weight of geographic similarity
+    tim : weight of temporal similarity
 output: 
     similarityscore (in[0,1])        
 '''
-def getExSim(entryA, entryB, g, t, c):
+def getExSim(entryA, entryB, geo, tim, cri):
     tempA = checkTempInput(entryA)
     tempB = checkTempInput(entryB)
     bboxA = checkBboxInput(entryA)
@@ -771,7 +847,7 @@ def getExSim(entryA, entryB, g, t, c):
     tempSim = 0
 
 # Extent
-    if c==0:
+    if cri==0:
         if vectorB and vectorA:
             geoSim = getGeoExtSimE(entryA,entryB)
         elif bboxA and bboxB:
@@ -779,7 +855,7 @@ def getExSim(entryA, entryB, g, t, c):
         if tempA and tempB:
             tempSim = getTempExtSim(entryA,entryB)
 # Location    
-    if c==1:
+    if cri==1:
         geoInter = 0
         tempInter = 0
         geoLoc = 0
@@ -798,40 +874,49 @@ def getExSim(entryA, entryB, g, t, c):
         geoSim = 0.4*geoInter + 0.6*geoLoc
         tempSim = 0.4*tempInter + 0.6*tempLoc
 
-    rel = g/(g+t)
-    sim = rel*geoSim + (1-rel)*tempSim
+    # Shape
+    if cri==3:
+        geoSim=0
+        if vectorA and vectorB:
+            geoSim=getShapeSim(entryA, entryB)
+        return geoSim
 
+    rel = geo/(geo+tim)
+    sim = rel*geoSim + (1-rel)*tempSim
     return sim 
 
 
 
 
 
-def getSimScoreTotal(entryA, entryB, g, t, e, d, l, m):
+def getSimScoreTotal(entryA, entryB, geo, tim, ext, dat, loc, mxm, dtl):
 
-    dSim = getIndSim(entryA, entryB, g, t, 2)
+    dSim = getIndSim(entryA, entryB, geo, tim, 2)
     #print("dsim= "+str(dSim))
-    if l<=(m/2):
-        lSim = getIndSim(entryA, entryB, g, t, 1)
+    if dtl is None or not dtl or not checkVectorInput(entryA) or not checkVectorInput(entryB): 
+        lSim = getIndSim(entryA, entryB, geo, tim, 1)
      #   print("lSim= "+str(lSim))
     else: 
-        lSim = getExSim(entryA, entryB, g, t, 1)
-    if e<=(m/2): 
-        eSim = getIndSim(entryA, entryB, g, t, 0)
+        lSim = getExSim(entryA, entryB, geo, tim, 1)
+    if dtl is None or not dtl or not checkVectorInput(entryA) or not checkVectorInput(entryB): 
+        eSim = getIndSim(entryA, entryB, geo, tim, 0)
     else: 
-        eSim = getExSim(entryA, entryB, g, t, 0)
-    print(entryB["id"]+" eSim= "+str(eSim)+" dsim= "+str(dSim)+" lsim= "+str(lSim))
-
-    totalSum=e+d+l
+        eSim = getExSim(entryA, entryB, geo, tim, 0)
+    #print(entryB["id"]+" eSim= "+str(eSim)+" dsim= "+str(dSim)+" lsim= "+str(lSim))
+    if dtl and checkVectorInput(entryA) and checkVectorInput(entryB):
+        sSim = getExSim(entryA, entryB, geo, tim, 3)
+        totalSum=ext+dat+loc+((ext+loc)/2)
+    else:
+        totalSum=ext+dat+loc
 
     simScore=0
 
-    if e>0:
-        simScore = simScore+(e/totalSum*eSim)
-    if l>0:
-        simScore = simScore+(l/totalSum*lSim)
-    if d>0:
-        simScore = simScore+(d/totalSum*dSim)
+    if ext>0:
+        simScore = simScore+(ext/totalSum*eSim)
+    if loc>0:
+        simScore = simScore+(loc/totalSum*lSim)
+    if dat>0:
+        simScore = simScore+(dat/totalSum*dSim)
 
     simScore = 0.999*simScore
     
@@ -845,25 +930,26 @@ getSimilarityScore: Berechnet den SimilarityScore
                 entry:      {
                                 "id" : idOfTheEntry,
                                 "wkt_geometry" : [minLon, minLat, maxLon, maxLat],
-                                "vector" : [[x,y],[x,y]...],
+                                "vector" : [[lat,long],[lat,long]...],
                                 "time" : [start, end],
                                 "raster"  : bool
                             }   
 
-        cmp is an entry and therefor the same format
+        ent is an entry and therefor the same format
         n : number of similar records to be retrieved
-        t : weight temporal similarity
-        g : weight geographic similarity
-        d : weight of datatype similarity 
-        e : weight of extent similarity 
-        l : weight of location similarity
-        m : max value for weights
+        tim : weight temporal similarity
+        geo : weight geographic similarity
+        dat : weight of datatype similarity 
+        ext : weight of extent similarity 
+        loc : weight of location similarity
+        max : max value for weights
+        dtl : boolean, true if detailed
 '''
 
-def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
+def getSimilarRecords(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
     
-    if checkValidity(entries, cmp, n, e, d, l, g, t, m) is False:
-        return False
+    checkValidity(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl)
+    
 
     if n>len(entries)-1:
         n=len(entries)-1
@@ -873,24 +959,24 @@ def getSimilarRecords(entries, cmp, n, e, d, l, g, t, m):
     i=0
 
     # First n entries are added to the priorityqueue
-    while i <= n:
-        if not (entries[i]["id"]==cmp["id"]):
-            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
+    while i < n:
+        if not (entries[i]["id"]==ent["id"]):
+            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)])
+            #print("1 "+str(i))
         i=i+1
     
     # Rest of entries are checked for better simscores
     while i < len(entries):
         min = heapq.heappop(records)
-        currscore = getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)
-        if min[1]<currscore and not (entries[i]["id"]==cmp["id"]):
-            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(cmp, entries[i], g, t, e, d, l, m)])
+        currscore = getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)
+        if min[1]<currscore and not (entries[i]["id"]==ent["id"]):
+            heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)])
+            #print("2 "+str(i))
         else:
             heapq.heappush(records, min)
+            #print("3 "+str(i))
         i=i+1
     
     output=sorted(records, key= lambda x: x[1], reverse=True)
 
     return output
-
-
-
