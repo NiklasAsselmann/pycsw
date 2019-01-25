@@ -242,7 +242,11 @@ def uniformPolygonArea(entry):
     norm = 1000
     eArea = getPolAr(entry)
     fac = math.sqrt(norm/eArea)
-    coords = map(lambda x: fac*x, entry["vector"])
+    coords = entry["vector"]
+    for i in coords:
+        for j in i:
+            j=j*fac
+    #coords = map(lambda x: fac*x, entry["vector"])
     return coords
 
 
@@ -254,8 +258,8 @@ def moveCoordinates(coordsA, coordsB):
     diffX=ctrA[0][0]-ctrB[0][0]
     diffY=ctrA[0][1]-ctrB[0][1]
     for x in coordsB:
-        coordsB[x][0]=coordsB[x][0]+diffX
-        coordsB[x][1]=coordsB[x][1]+diffY
+        x[0]=x[0]+diffX
+        x[1]=x[1]+diffY
     return[coordsA,coordsB]
 
 
@@ -390,15 +394,13 @@ Location Similarity
 ####### Shape comparison ############################################
 #####################################################################
 
-def compShape(entryA, entryB):
+def getShapeSim(entryA, entryB):
     polygs = getAlignedPolygons(entryA,entryB)
     polygonA = Polygon(polygs[0])
     polygonB = Polygon(polygs[1])
-    intersec = polygonA.intersection(polygonB)
-    sim = intersec/(polygonA.area+(polygonB.area-intersec)
-    print(sim)
+    intersec = (polygonA.intersection(polygonB)).area
+    sim = intersec/(polygonA.area+(polygonB.area-intersec))
     return sim 
-
 
 
 #####################################################################
@@ -872,9 +874,15 @@ def getExSim(entryA, entryB, geo, tim, cri):
         geoSim = 0.4*geoInter + 0.6*geoLoc
         tempSim = 0.4*tempInter + 0.6*tempLoc
 
+    # Shape
+    if cri==3:
+        geoSim=0
+        if vectorA and vectorB:
+            geoSim=getShapeSim(entryA, entryB)
+        return geoSim
+
     rel = geo/(geo+tim)
     sim = rel*geoSim + (1-rel)*tempSim
-
     return sim 
 
 
@@ -895,8 +903,11 @@ def getSimScoreTotal(entryA, entryB, geo, tim, ext, dat, loc, mxm, dtl):
     else: 
         eSim = getExSim(entryA, entryB, geo, tim, 0)
     #print(entryB["id"]+" eSim= "+str(eSim)+" dsim= "+str(dSim)+" lsim= "+str(lSim))
-
-    totalSum=ext+dat+loc
+    if dtl and checkVectorInput(entryA) and checkVectorInput(entryB):
+        sSim = getExSim(entryA, entryB, geo, tim, 3)
+        totalSum=ext+dat+loc+((ext+loc)/2)
+    else:
+        totalSum=ext+dat+loc
 
     simScore=0
 
@@ -951,7 +962,7 @@ def getSimilarRecords(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
     while i < n:
         if not (entries[i]["id"]==ent["id"]):
             heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)])
-            print("1 "+str(i))
+            #print("1 "+str(i))
         i=i+1
     
     # Rest of entries are checked for better simscores
@@ -960,10 +971,10 @@ def getSimilarRecords(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
         currscore = getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)
         if min[1]<currscore and not (entries[i]["id"]==ent["id"]):
             heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)])
-            print("2 "+str(i))
+            #print("2 "+str(i))
         else:
             heapq.heappush(records, min)
-            print("3 "+str(i))
+            #print("3 "+str(i))
         i=i+1
     
     output=sorted(records, key= lambda x: x[1], reverse=True)
@@ -1088,7 +1099,7 @@ entriesTest =[{'id': 'urn:uuid:19887a8a-f6b0-4a63-ae56-7fba0e17801f', 'wkt_geome
 entryCmp ={'id': 'urn:uuid:9a669547-b69b-469f-a11f-2d875366bbdc', 'wkt_geometry': ['-6.17', '44.79', '-2.23', '51.13'], 'time': ['2007-06-11T02:28:00Z', '2007-08-11T02:28:00Z'], 'vector': [[12, 12], [45, 67]], 'raster': None}
 
 #print(getSimilarRecords([entry1, entry2, entry3, entry4, entry5, entry6, entry7, entry8, entry9, entry10, entry11, entry12, entry13, entry14, entry15], entry1, 9, 1, 1, 1, 1, 1, 5))
-#print(getSimilarRecords(entriesTest, entryCmp, 9,1,1,1,1,1,5,False))
+#print(getSimilarRecords(entriesTest, entryCmp, 9,1,1,1,1,1,5,True))
 #pt2=[[12,12],[45,67],[38,11]]
 #print(getPolygCenter([[12,22],[45,77],[38,21]]))
-print(compShape(entry6,entry8))
+#print(compShape(entry2,entry4))
