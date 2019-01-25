@@ -50,15 +50,15 @@ def checkValidity(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
     #entries will be checked during iteration in main function
     #ent
     if ent is None or ent["id"] is None:
-        return False
+        raise ValueError('no comparable input')
 
     #n will be checked inside main function
 
     #parameters
 
     if mxm<0 or ext<0 or ext>mxm or dat<0 or dat>mxm or loc<0 or loc>mxm or geo<0 or geo>mxm or tim<0 or tim>mxm or (geo==0 and tim==0):
-        return False
-    return True
+        raise ValueError('invalid parameters, must be within 0 and mxm, geo and tim cannot both be 0')
+    return 
 
 
 
@@ -948,8 +948,8 @@ getSimilarityScore: Berechnet den SimilarityScore
 
 def getSimilarRecords(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
     
-    if checkValidity(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl) is False:
-        return False
+    checkValidity(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl)
+    
 
     if n>len(entries)-1:
         n=len(entries)-1
