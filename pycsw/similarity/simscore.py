@@ -99,10 +99,10 @@ def ConvertToRadian(input):
         diagonal length in m
 '''
 def getDiagonal(entry):
-    lon1 = entry["wkt_geometry"][0]
-    lon2 = entry["wkt_geometry"][2]
-    lat2 = entry["wkt_geometry"][3]
-    lat1 = entry["wkt_geometry"][1]
+    lon1 = entry["wkt_geometry"][1]
+    lon2 = entry["wkt_geometry"][3]
+    lat2 = entry["wkt_geometry"][2]
+    lat1 = entry["wkt_geometry"][0]
 
     return gDiag(lat1,lat2,lon1,lon2)
 
@@ -154,10 +154,10 @@ output:
     center of Bounding Box as 2D point
 '''
 def getCenter(entry):
-    lon1=entry["wkt_geometry"][0]
-    lon2=entry["wkt_geometry"][2]
-    lat1=entry["wkt_geometry"][1]
-    lat2=entry["wkt_geometry"][3]
+    lon1=entry["wkt_geometry"][1]
+    lon2=entry["wkt_geometry"][3]
+    lat1=entry["wkt_geometry"][0]
+    lat2=entry["wkt_geometry"][2]
 
     lon1, lat1, lon2, lat2 = map(ConvertToRadian, [lon1, lat1, lon2, lat2])
 
@@ -230,12 +230,29 @@ Polygon Area in m²
 def getPolAr(entry):
     lon, lat = zip(*entry['vector'])
     
-    pa = Proj("+proj=aea +lat_1=37.0 +lat_2=41.0 +lat_0=39.0 +lon_0=-106.55")
-    #equal area projection centered on and bracketing the area of interest
+    minLat=entry['wkt_geometry'][0]
+    maxLat=entry['wkt_geometry'][2]
+    minLon=entry['wkt_geometry'][1]
+    maxLon=entry['wkt_geometry'][3]
+
+    pa = Proj("+proj=aea +lat_1="+str(minLat)+" +lat_2="+str(maxLat)+" +lat_0="+str(minLon)+" +lon_0="+str(maxLon))
+    #equal area projection centered on the area of interest
     x, y = pa(lon, lat)
     pol = {"type": "Polygon", "coordinates": [zip(x, y)]}
     return shape(pol).area 
 
+
+def hasArea(entry):
+    if getPolAr(entry)==0:
+        print(str(getPolAr(entry)))
+        return False
+    return True
+
+
+'''
+Align Polygons by normalizing their sizes and moving polygonB on top of polygonA
+
+'''
 
 
 def uniformPolygonArea(entry):
@@ -264,7 +281,9 @@ def moveCoordinates(coordsA, coordsB):
 
 
 def getAlignedPolygons(entryA,entryB):
-    return (moveCoordinates(uniformPolygonArea(entryA),uniformPolygonArea(entryB)))
+    unAreaA= uniformPolygonArea(entryA)
+    unAreaB= uniformPolygonArea(entryB)
+    return (moveCoordinates(unAreaA,unAreaB))
 
 
 
@@ -285,10 +304,10 @@ output:
 def pointsInBbox(pointsA, pointsB):
     points = [[pointsB[1],pointsB[2]], [pointsB[1],pointsB[3]], [pointsB[0],pointsB[2]], [pointsB[0],pointsB[3]]]
 
-    minLat=pointsA[1]
-    maxLat=pointsA[3]
-    minLon=pointsA[0]
-    maxLon=pointsA[2]
+    minLat=pointsA[0]
+    maxLat=pointsA[2]
+    minLon=pointsA[1]
+    maxLon=pointsA[3]
 
     i=0
     res = [0,0,0,0]
@@ -395,6 +414,13 @@ Location Similarity
 #####################################################################
 
 def getShapeSim(entryA, entryB):
+    #both are lines
+    if not hasArea(entryA) and not hasArea(entryB):
+        return 1
+    #one line, one polygon
+    if not hasArea(entryA) or not hasArea(entryB):
+        print(str(entryB['id'])+" has no area")
+        return 0
     polygs = getAlignedPolygons(entryA,entryB)
     polygonA = Polygon(polygs[0])
     polygonB = Polygon(polygs[1])
@@ -421,7 +447,6 @@ def getCenterGeoSim(entryA, entryB):
     centerB = getCenter(entryB)
     diagonal = gDiag(centerA[1], centerB[1], centerA[0], centerB[0])
     circumf = 20038000
-    #printprint("diagonal: "+str(diagonal))
     sim = 1-(diagonal/circumf)
     return sim
 
@@ -463,22 +488,24 @@ output:
 
 # Calculate intersection area of both bounding boxes
 def getInterGeoSim(entryA,entryB):
-    minLatA=entryA["wkt_geometry"][1]
-    maxLatA=entryA["wkt_geometry"][3]
-    minLonA=entryA["wkt_geometry"][0]
-    maxLonA=entryA["wkt_geometry"][2]
-    minLatB=entryB["wkt_geometry"][1]
-    maxLatB=entryB["wkt_geometry"][3]
-    minLonB=entryB["wkt_geometry"][0]
-    maxLonB=entryB["wkt_geometry"][2]
+    minLatA=entryA["wkt_geometry"][0]
+    maxLatA=entryA["wkt_geometry"][2]
+    minLonA=entryA["wkt_geometry"][1]
+    maxLonA=entryA["wkt_geometry"][3]
+    minLatB=entryB["wkt_geometry"][0]
+    maxLatB=entryB["wkt_geometry"][2]
+    minLonB=entryB["wkt_geometry"][1]
+    maxLonB=entryB["wkt_geometry"][3]
     
-    #disjunct?
-    if minLonA > maxLonB or maxLonA < minLonB or maxLatA < minLatB or minLatA > maxLonB:
-        return 0
 
     #A in B 
     if minLonA >= minLonB and maxLonA <= maxLonB and minLonA >= minLonB and maxLonA <= maxLonB:
         return 1
+
+    #disjunct?
+    if minLonA > maxLonB or maxLonA < minLonB or maxLatA < minLatB or minLatA > maxLonB:
+        return 0
+
 
     areaA = getAr(entryA["wkt_geometry"])
 
@@ -568,98 +595,11 @@ TODO: implement exact calculation
 
 # Calculate intersection area of both bounding boxes 
 def getInterGeoSimE(entryA,entryB):
-    minLatA=entryA["wkt_geometry"][1]
-    maxLatA=entryA["wkt_geometry"][3]
-    minLonA=entryA["wkt_geometry"][0]
-    maxLonA=entryA["wkt_geometry"][2]
-    minLatB=entryB["wkt_geometry"][1]
-    maxLatB=entryB["wkt_geometry"][3]
-    minLonB=entryB["wkt_geometry"][0]
-    maxLonB=entryB["wkt_geometry"][2]
-    
-    #disjunct?
-    if minLonA > maxLonB or maxLonA < minLonB or maxLatA < minLatB or minLatA > maxLonB:
-        return 0
-    
-    #A in B 
-    if minLonA >= minLonB and maxLonA <= maxLonB and minLonA >= minLonB and maxLonA <= maxLonB:
-        return 1
-
-    areaA = getAr(entryA["wkt_geometry"])
-
-    #how many points of B in A?
-    points = pointsInBbox(entryA["wkt_geometry"], entryB["wkt_geometry"])
-
-    minLat=minLatA
-    minLon=minLonA
-    maxLat=maxLatA
-    maxLon=maxLonA
-
-    if points[0]==1:
-        minLon=minLonB
-        maxLat=maxLatB
-    
-    if points[1]==1:
-        maxLat=maxLatB
-        maxLon=maxLonB
-    
-    if points[2]==1:
-        minLat=minLatB
-        minLon=minLonB
-
-    if points[3]==1:
-        minLat=minLatB
-        maxLon=maxLonB
-    
-    #If only points of B are in A, but not of A in B
-    elif points[0]==0 and points[1]==0 and points[2]==0:
-        points = pointsInBbox(entryB["wkt_geometry"], entryA["wkt_geometry"])
-        unchanged = True
-        
-        if points[0]==1:
-            maxLon=maxLonB
-            minLat=minLatB
-            unchanged = False
-    
-        if points[1]==1:
-            minLat=minLatB
-            minLon=minLonB
-            unchanged = False
-    
-        if points[2]==1:
-            maxLat=maxLatB
-            maxLon=maxLonB
-            unchanged = False
-
-        if points[3]==1:
-            maxLat=maxLatB
-            minLon=minLonB
-            unchanged = False
-        
-       # intersection when one rectangle has both min and max Latitude and the other has min and max Longitude
-        if unchanged:
-            if minLatA<minLatB and maxLatA>maxLatB:
-                maxLat=maxLatB
-                minLat=minLatB
-                minLon=minLonA
-                maxLon=maxLonA
-            else:
-                maxLat=maxLatA
-                minLat=minLatA
-                minLon=minLonB
-                maxLon=maxLonB
-    intersecarea=getAr([minLat,maxLat,minLon,maxLon])
-
-    # if areaA is 0, A is either a point or a line. If it is a point, both cases (in B or outside B) are covered including return value above
-    # if A is a line and it is not entirely in B, the insersection area must still be 0:
-    if intersecarea == 0:
-        # Wenn A eine Linie ist, länge der geschnittenen Linie mit Länge der Gesamtlinie vergleichen
-        if areaA==0:
-            line = gDiag(minLat,maxLat,minLon,maxLon)
-            lineA = getDiagonal(entryA)
-            return float (line/lineA) 
-    return float(intersecarea/areaA)
-
+    polygonA = Polygon(entryA['vector'])
+    polygonB = Polygon(entryB['vector'])
+    intersec = (polygonA.intersection(polygonB)).area
+    sim = intersec/polygonA.area
+    return sim 
 
 
 
@@ -807,9 +747,9 @@ def getIndSim(entryA, entryB, geo, tim, cri):
         if tempA and tempB:
             tempInter = getInterTempSim(entryA,entryB)
             tempLoc = getCenterTempSim(entryA,entryB)
-        #print("geoInter :"+str(geoInter)+" geoLoc: "+str(geoLoc))
         geoSim = 0.4*geoInter + 0.6*geoLoc
         tempSim = 0.4*tempInter + 0.6*tempLoc
+
 # Datatype
     if cri==2:
         if vectorA and vectorB:
@@ -870,7 +810,6 @@ def getExSim(entryA, entryB, geo, tim, cri):
         if tempA and tempB:
             tempInter = getInterTempSim(entryA,entryB)
             tempLoc = getCenterTempSim(entryA,entryB)
-
         geoSim = 0.4*geoInter + 0.6*geoLoc
         tempSim = 0.4*tempInter + 0.6*tempLoc
 
@@ -891,19 +830,18 @@ def getExSim(entryA, entryB, geo, tim, cri):
 
 def getSimScoreTotal(entryA, entryB, geo, tim, ext, dat, loc, mxm, dtl):
 
+    sSim=None
+
     dSim = getIndSim(entryA, entryB, geo, tim, 2)
-    #print("dsim= "+str(dSim))
     if dtl is None or not dtl or not checkVectorInput(entryA) or not checkVectorInput(entryB): 
         lSim = getIndSim(entryA, entryB, geo, tim, 1)
-     #   print("lSim= "+str(lSim))
     else: 
         lSim = getExSim(entryA, entryB, geo, tim, 1)
     if dtl is None or not dtl or not checkVectorInput(entryA) or not checkVectorInput(entryB): 
         eSim = getIndSim(entryA, entryB, geo, tim, 0)
     else: 
         eSim = getExSim(entryA, entryB, geo, tim, 0)
-    #print(entryB["id"]+" eSim= "+str(eSim)+" dsim= "+str(dSim)+" lsim= "+str(lSim))
-    if dtl and checkVectorInput(entryA) and checkVectorInput(entryB):
+    if dtl and checkVectorInput(entryA) and checkVectorInput(entryB) and loc>0 and ext<0:
         sSim = getExSim(entryA, entryB, geo, tim, 3)
         totalSum=ext+dat+loc+((ext+loc)/2)
     else:
@@ -917,6 +855,8 @@ def getSimScoreTotal(entryA, entryB, geo, tim, ext, dat, loc, mxm, dtl):
         simScore = simScore+(loc/totalSum*lSim)
     if dat>0:
         simScore = simScore+(dat/totalSum*dSim)
+    if sSim is not None:
+        simScore = simScore+(((ext+loc)/2)/totalSum*sSim)
 
     simScore = 0.999*simScore
     
@@ -929,7 +869,7 @@ getSimilarityScore: Berechnet den SimilarityScore
 
                 entry:      {
                                 "id" : idOfTheEntry,
-                                "wkt_geometry" : [minLon, minLat, maxLon, maxLat],
+                                "wkt_geometry" : [minLat, minLon, maxLat, maxLon],
                                 "vector" : [[lat,long],[lat,long]...],
                                 "time" : [start, end],
                                 "raster"  : bool
@@ -937,11 +877,11 @@ getSimilarityScore: Berechnet den SimilarityScore
 
         ent is an entry and therefor the same format
         n : number of similar records to be retrieved
-        tim : weight temporal similarity
-        geo : weight geographic similarity
-        dat : weight of datatype similarity 
         ext : weight of extent similarity 
+        dat : weight of datatype similarity 
         loc : weight of location similarity
+        geo : weight geographic similarity
+        tim : weight temporal similarity
         max : max value for weights
         dtl : boolean, true if detailed
 '''
@@ -959,11 +899,13 @@ def getSimilarRecords(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
     i=0
 
     # First n entries are added to the priorityqueue
-    while i < n:
+    while i < n and i<len(entries):
         if not (entries[i]["id"]==ent["id"]):
             heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)])
-            #print("1 "+str(i))
-        i=i+1
+            i=i+1
+        else:
+            i=i+1
+            n=n+1
     
     # Rest of entries are checked for better simscores
     while i < len(entries):
@@ -971,12 +913,133 @@ def getSimilarRecords(entries, ent, n, ext, dat, loc, geo, tim, mxm, dtl):
         currscore = getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)
         if min[1]<currscore and not (entries[i]["id"]==ent["id"]):
             heapq.heappush(records, [entries[i]["id"], getSimScoreTotal(ent, entries[i], geo, tim, ext, dat, loc, mxm, dtl)])
-            #print("2 "+str(i))
         else:
             heapq.heappush(records, min)
-            #print("3 "+str(i))
         i=i+1
     
     output=sorted(records, key= lambda x: x[1], reverse=True)
 
     return output
+
+
+#####################################################################
+################ Testdata ###########################################
+#####################################################################
+
+muenster1t1 ={
+        "id": 'urn:uuid: 1a', 
+        "wkt_geometry": [51.917591, 7.549667, 52.00137, 7.704849], 
+        'time': ['2000-01-11T02:28:00Z', '2010-01-11T02:28:00Z'], 
+        'vector': [[52.00137, 7.549667], [52.00137, 7.704849], [51.917591, 7.704849], [51.917591, 7.549667]], 
+        'raster': False}
+
+#################################
+##### different temp extent #####
+#################################
+
+#same length, no intersection
+muenster1t2 ={
+        "id": 'urn:uuid: 1b', 
+        "wkt_geometry": [51.917591, 7.549667, 52.00137, 7.704849], 
+        'time': ['1980-01-11T02:28:00Z', '1990-01-11T02:28:00Z'], 
+        'vector': [[52.00137, 7.549667], [52.00137, 7.704849], [51.917591, 7.704849], [51.917591, 7.549667]], 
+        'raster': False}
+
+
+
+muenster1t3 ={
+        "id": 'urn:uuid: 1c', 
+        "wkt_geometry": [51.917591, 7.549667, 52.00137, 7.704849], 
+        'time': None, 
+        'vector': [[52.00137, 7.549667], [52.00137, 7.704849], [51.917591, 7.704849], [51.917591, 7.549667]], 
+        'raster': False}
+
+muenster1t4 ={
+        "id": 'urn:uuid: 1d', 
+        "wkt_geometry": [51.917591, 7.549667, 52.00137, 7.704849], 
+        'time': None, 
+        'vector': [[52.00137, 7.549667], [52.00137, 7.704849], [51.917591, 7.704849], [51.917591, 7.549667]], 
+        'raster': False}
+
+
+#################################
+#### different datatype #########
+#################################
+
+muenster1d1 ={
+        "id": 'urn:uuid: 1dd', 
+        "wkt_geometry": [51.917591, 7.549667, 51.917591, 7.549667], 
+        'time': ['2000-01-11T02:28:00Z', '2010-01-11T02:28:00Z'], 
+        'vector': [[52.00137, 7.549667]], 
+        'raster': False}
+
+muenster1d2 ={
+        "id": 'urn:uuid: 1dd', 
+        "wkt_geometry": [51.917591, 7.549667, 52.00137, 7.704849], 
+        'time': ['2000-01-11T02:28:00Z', '2010-01-11T02:28:00Z'], 
+        'vector': [[52.00137, 7.549667], [52.00137, 7.704849], [51.917591, 7.704849], [51.917591, 7.549667]],
+        'raster': True}
+
+
+#################################
+##### different geo extent ######
+#################################
+
+
+
+australien ={
+        'id': 'urn:uuid:2', 
+        "wkt_geometry": [-51.917591, -7.549667, -52.00137, -7.704849], 
+        'time': None, 
+        'vector': [[-52.00137, -7.549667], [-52.00137, -7.704849], [-51.917591, -7.704849], [-51.917591, -7.549667]], 
+        'raster': False}
+
+Muenster2 ={
+        'id': 'urn:uuid:3', 
+        'wkt_geometry': [51.917168, 7.548981, 52.00137, 7.704849], 
+        'time': None, 
+        'vector': [[51.931988, 7.548981], [51.99841, 7.549667], [52.00137, 7.554131], [52.001158, 7.699699], [51.99841, 7.704849], [51.921403, 7.704506], [51.917168, 7.693176], [51.917168, 7.598419], [51.917168, 7.554474]], 
+        'raster': False
+    }
+Muenster3 ={
+        'id': 'urn:uuid:4', 
+        'wkt_geometry': [51.917168, 7.551041, 52.00137, 7.704163], 
+        'time': None, 
+        'vector': [[51.917168, 7.551041], [52.00137, 7.704163], [51.917168, 7.551041]], 
+        'raster': False
+    }
+
+Muenster4 ={
+        'id': 'urn:uuid:5', 
+        'wkt_geometry': [51.898529, 7.413025, 52.054179, 7.816086], 
+        'time': ['2007-06-11T02:28:00Z', '2007-08-11T02:28:00Z'], 
+        'vector': [[51.945535, 7.413025], [52.054179, 7.732315], [51.994183, 7.816086], [51.898529, 7.488556]], 
+        'raster': False
+    }
+
+Mitteldeutschland ={
+        'id': 'urn:uuid:6', 
+        'wkt_geometry': [51.618017, 7.619019, 52.593038, 9.574585], 
+        'time': ['2007-06-11T02:28:00Z', '2007-08-11T02:28:00Z'], 
+        'vector': [[52.593038, 7.619019], [52.593038, 9.574585], [51.618017, 9.574585], [51.618017, 7.619019]], 
+        'raster': False
+    }
+
+entriesGeo=[muenster1t1, muenster1t2, Muenster2, Muenster3, Muenster4, australien, Mitteldeutschland]
+entriesDat=[muenster1t1, muenster1d1, muenster1d2]
+entriesTime=[muenster1t1, muenster1t2, muenster1t3, muenster1t4]
+entriesAll=[muenster1t1, muenster1t2, Muenster2, Muenster3, Muenster4, australien, Mitteldeutschland, muenster1t3, muenster1t4, muenster1t2, muenster1d1, muenster1d2]
+
+print(getSimilarRecords(entriesGeo, muenster1t1, 10,0,0,2,1,0,5,True))
+'''
+        ent is an entry and therefor the same format
+        n : number of similar records to be retrieved
+        ext : weight of extent similarity 
+        dat : weight of datatype similarity 
+        loc : weight of location similarity
+        geo : weight geographic similarity
+        tim : weight temporal similarity
+        max : max value for weights
+        dtl : boolean, true if detailed
+'''
+
