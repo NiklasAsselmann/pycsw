@@ -1320,6 +1320,7 @@ class Csw3(object):
         WEIGHT_LOCATION_SIM = None
         WEIGHT_GEOGRAPHIC_SIM = None
         WEIGHT_EXTENT_SIM = None
+        DETAILED_ALGORITHM = None
         '''for each parameter of the similarity function:
             if parameter for the similary function is not changed in the request, take the default value from the config file
             if parameter is changed but in a wrong format, raise an error that is visible for the user
@@ -1402,9 +1403,26 @@ class Csw3(object):
                  'extent_weight', "Parameter value of 'extent_weight' must be integer or float")
         else: 
             WEIGHT_EXTENT_SIM = int(metadatasimilarity.get('extent_weight'))
+        if 'detailed' in self.parent.kvp:
+            input = self.parent.kvp['detailed']
+            if input == 'true' or input == 'True' or input == '1':
+                DETAILED_ALGORITHM = True
+            elif input == 'false' or input == 'False' or input == '0':
+                DETAILED_ALGORITHM = False
+            else:
+                return self.exceptionreport('InvalidParameterValue',
+                'detailed', "Parameter value must be either in ['true','True','1'] or in ['false','False','0']") 
+        else: 
+            configfield_detailedAlgorithm = metadatasimilarity.get('datailed_algorithm')
+            if configfield_detailedAlgorithm == 'true' or configfield_detailedAlgorithm == 'True' or configfield_detailedAlgorithm == '1':
+                    DETAILED_ALGORITHM = True
+            elif configfield_detailedAlgorithm == 'false' or configfield_detailedAlgorithm == 'False' or configfield_detailedAlgorithm == '0':
+                DETAILED_ALGORITHM = False
+            else:
+                raise Exception("Value of fields 'datailed_algorithm' is not valid")
 
         LOGGER.debug([MAX_NUMBER_RECORDS, WEIGHT_SPATIAL_SIM, WEIGHT_TEMP_SIM, WEIGHT_DATATYPE_SIM, 
-        WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_EXTENT_SIM])
+        WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_EXTENT_SIM, DETAILED_ALGORITHM])
 
         # get all records
         all_records = self.parent.repository.queryWithoutLimit(constraint="")[1]
@@ -1462,7 +1480,7 @@ class Csw3(object):
             try:
                 # call similarity function from parameters
                 simscores = simscore.getSimilarRecords(records_array, compared_record, MAX_NUMBER_RECORDS, WEIGHT_EXTENT_SIM, WEIGHT_DATATYPE_SIM, 
-                    WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM, weight_max_value)
+                    WEIGHT_LOCATION_SIM, WEIGHT_GEOGRAPHIC_SIM, WEIGHT_TEMP_SIM, weight_max_value, DETAILED_ALGORITHM)
                 LOGGER.debug(simscores)
                 LOGGER.debug(MAX_NUMBER_RECORDS)
                 LOGGER.debug(len(simscores))
