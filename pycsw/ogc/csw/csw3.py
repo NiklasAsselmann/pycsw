@@ -73,13 +73,9 @@ class Csw3(object):
         LOGGER.info('Validating ows20:AcceptFormats')
         LOGGER.debug(self.parent.context.model['operations']['GetCapabilities']['parameters']['acceptFormats']['values'])
         if 'acceptformats' in self.parent.kvp:
-            LOGGER.debug("Selbst")
-            LOGGER.debug("accepted formats in self.parent.kvp")
             bfound = False
             for fmt in self.parent.kvp['acceptformats'].split(','):
                 if fmt in self.parent.context.model['operations']['GetCapabilities']['parameters']['acceptFormats']['values']:
-                    LOGGER.debug("Selbst")
-                    LOGGER.debug(fmt)
                     self.parent.mimetype = fmt
                     bfound = True
                     break
@@ -1082,9 +1078,6 @@ class Csw3(object):
                 for ofmt in self.parent.environ['HTTP_ACCEPT'].split(','):
                     if ofmt in self.parent.context.model['operations']['GetRecords']['parameters']['outputFormat']['values']:
                         self.parent.kvp['outputformat'] = ofmt
-                        LOGGER.debug("Selbst")
-                        LOGGER.debug(self.parent.kvp['outputformat'])
-                        LOGGER.debug(ofmt)
                         break
 
 
@@ -1092,24 +1085,18 @@ class Csw3(object):
             self.parent.kvp['outputformat'] not in
             self.parent.context.model['operations']['GetRecordById']['parameters']
             ['outputFormat']['values']):
-            LOGGER.debug("Selbst")
-            LOGGER.debug("1")
             return self.exceptionreport('InvalidParameterValue',
             'outputformat', 'Invalid outputformat parameter %s' %
             self.parent.kvp['outputformat'])
 
         if ('outputschema' in self.parent.kvp and self.parent.kvp['outputschema'] not in
             self.parent.context.model['operations']['GetRecordById']['parameters']
-            ['outputSchema']['values']):
-            LOGGER.debug("Selbst")
-            LOGGER.debug("2")            
+            ['outputSchema']['values']):        
             return self.exceptionreport('InvalidParameterValue',
             'outputschema', 'Invalid outputschema parameter %s' %
             self.parent.kvp['outputschema'])
 
         if 'outputformat' in self.parent.kvp:
-            LOGGER.debug("Selbst")
-            LOGGER.debug("2")
             self.parent.contenttype = self.parent.kvp['outputformat']
             if self.parent.kvp['outputformat'] == 'application/atom+xml':
                 self.parent.kvp['outputschema'] = self.parent.context.namespaces['atom']
@@ -1175,8 +1162,6 @@ class Csw3(object):
         if len(results) == 0:
             return self.exceptionreport('NotFound', 'id',
             'No repository item found for \'%s\'' % self.parent.kvp['id'])
-        LOGGER.debug("Selbst")
-        LOGGER.debug(node)
         return node
 
     
@@ -1989,8 +1974,6 @@ class Csw3(object):
 
             #Vector Representation
             vectorRepresentation = util.getqattr(record, self.parent.context.md_core_model['mappings']['pycsw:VectorRepresentation'])
-            LOGGER.debug("Selbst")
-            LOGGER.debug(vectorRepresentation)
             if vectorRepresentation:
                 etree.SubElement(record, util.nspath_eval('dc:VectorRepresentation', self.parent.context.namespaces)).text = vectorRepresentation
 
@@ -2248,8 +2231,6 @@ class Csw3(object):
             else self.parent.context.namespaces['csw30']
 
             tmp = doc.find('.').attrib.get('outputFormat')
-            LOGGER.debug("Selbst")
-            LOGGER.debug(tmp)
             if tmp is not None:
                 request['outputformat'] = tmp
 
