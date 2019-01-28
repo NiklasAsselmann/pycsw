@@ -125,6 +125,12 @@
                             minOccurs="0" maxOccurs="unbounded"/>
                <xsd:element ref="dc:format"
                             minOccurs="0" maxOccurs="unbounded"/>
+               <xsd:element ref="dc:vector_rep"
+                            minOccurs="0" maxOccurs="unbounded"/>
+               <xsd:element ref="dc:time_begin"
+                            minOccurs="0" maxOccurs="unbounded"/>
+               <xsd:element ref="dc:time_end"
+                            minOccurs="0" maxOccurs="unbounded"/>
                <xsd:element ref="dc:relation"
                             minOccurs="0" maxOccurs="unbounded"/>
                <xsd:element ref="dct:modified"

@@ -1,5 +1,6 @@
 # build artifacts
 *.pyc
+*.log
 *.egg-info
 build
 dist
@@ -14,6 +15,7 @@ tests/results
 .tox
 .pytest_cache
 
+
 # test configurations
 /default.cfg
 
@@ -23,3 +25,5 @@ tests/results
 # shell files
 .env
 .envrc
+
+tests/functionaltests/suites/cite/data/cite\.db
