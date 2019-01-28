@@ -414,9 +414,6 @@ class Csw(object):
                 )
                 LOGGER.debug(
                     'Repository loaded (local): %s.' % self.repository.dbtype)
-                LOGGER.debug("Selbst")
-                LOGGER.debug(
-                    'Repository loaded (local): %s.' % self.repository)
             except Exception as err:
                 msg = 'Could not load repository (local): %s' % err
                 LOGGER.exception(msg)
@@ -573,8 +570,6 @@ class Csw(object):
                 LOGGER.debug(str(self.response))
             elif self.kvp['request'] == 'GetRecordById':
                 self.response = self.iface.getrecordbyid()
-                LOGGER.debug("Selbst")
-                LOGGER.debug(self.response)
             elif self.kvp['request'] == 'GetSimilarRecords':
                 self.response = self.iface.getsimilarrecords()
             elif self.kvp['request'] == 'GetRepositoryItem':
@@ -669,28 +664,6 @@ class Csw(object):
                                   encoding='unicode')
 
 
-
-        LOGGER.debug("selbst")
-        
-
-        '''
-        if (isinstance(self.kvp, dict) and 'outputformat' in self.kvp and
-                self.kvp['outputformat'] == 'application/json'):
-            self.contenttype = self.kvp['outputformat']
-            from pycsw.core.formats import fmt_json
-            response = fmt_json.xml2json(response,
-                                         self.context.namespaces,
-                                         self.pretty_print)
-        else:  # it's XML
-            if 'outputformat' in self.kvp:
-                self.contenttype = self.kvp['outputformat']
-            else:
-                self.contenttype = self.mimetype
-
-            xmldecl = ('<?xml version="1.0" encoding="%s" standalone="no"?>'
-                       '\n' % self.encoding)
-            appinfo = '<!-- pycsw %s -->\n' % self.context.version
-        '''
         if (isinstance(self.kvp, dict) and 'outputformat' in self.kvp and
                 (self.kvp['outputformat'] == 'application/xml' or self.kvp['outputformat'] == 'application/XML')):
             self.contenttype = self.kvp['outputformat']
@@ -712,7 +685,7 @@ class Csw(object):
         if isinstance(self.contenttype, bytes):
             self.contenttype = self.contenttype.decode()
         LOGGER.debug(response)
-        #response = '{"csw30:SummaryRecord": {"dc:identifier123": "urn:uuid:a06af396-3105-442d-8b40-22b57a90d2f2","dc:title": "Lorem ipsum dolor sit amet hallo hallo","dc:type": "http://purl.org/dc/dcmitype/Image","dc:format": "image/jpeg", "hallo": {"hallo": "hallo"}}}'
+        #response = '{"csw30:SummaryRecord": {"dc:identifier123": "urn:uuid:a06af396-3105-442d-8b40-22b57a90d2f2","dc:title": "Lorem ipsum dolor sit amet","dc:type": "http://purl.org/dc/dcmitype/Image","dc:format": "image/jpeg", "": {"": ""}}}'
         s = (u'%s%s%s' % (xmldecl, appinfo, response)).encode(self.encoding)
         LOGGER.debug('Response code: %s',
                      self.context.response_codes[self.status])

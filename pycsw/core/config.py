@@ -355,9 +355,7 @@ class StaticContext(object):
                                 'dc:VectorRepresentation':
                                 {'dbcol': self.md_core_model['mappings']['pycsw:VectorRepresentation']},
                                 'csw:AnyText':
-                                {'dbcol': self.md_core_model['mappings']['pycsw:AnyText']},
-                                'furtherText':
-                                {'Hallo Hallo Hallo'},
+                                {'dbcol': self.md_core_model['mappings']['pycsw:AnyText']}
                             }
                         }
                     }
